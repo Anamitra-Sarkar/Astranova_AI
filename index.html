@@ -1,0 +1,1180 @@
+<!DOCTYPE html>
+<html lang="en"> <!-- Default to dark, JS will handle theme switching -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AstraNova AI</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:wght@400;500;600&family=Roboto+Mono:wght@400;500&family=Playfair+Display:wght@400;500;600&family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="icon" href="/image.png" type="image/png">
+
+    <!-- Libraries for Markdown and Code Highlighting -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css" id="hljs-theme">
+
+    <!-- --- Enhanced Styling and Theme Variables --- -->
+    <style>
+        :root {
+            --bg-primary: #111827;
+            --bg-secondary: #1f2937;
+            --bg-tertiary: #374151;
+            --bg-input: #4b5563;
+            --border-color: #4b5563;
+            --text-primary: #f9fafb;
+            --text-secondary: #d1d5db;
+            --text-muted: #9ca3af;
+            --accent-primary: #3b82f6;
+            --accent-primary-hover: #2563eb;
+            --danger-color: #ef4444; 
+            --danger-color-hover: #dc2626;
+            --sidebar-bg: rgba(17, 24, 39, 0.75);
+            --header-bg: rgba(31, 41, 55, 0.75);
+            --modal-bg: #1f2937;
+            --user-bubble-bg: linear-gradient(135deg, #3b82f6, #60a5fa);
+            --model-bubble-bg: #374151;
+            --code-bg: #0d1117;
+            --font-family: 'Inter', sans-serif;
+        }
+
+        html.light {
+            --bg-primary: #f9fafb;
+            --bg-secondary: #f3f4f6;
+            --bg-tertiary: #e5e7eb;
+            --bg-input: #ffffff;
+            --border-color: #d1d5db;
+            --text-primary: #111827;
+            --text-secondary: #374151;
+            --text-muted: #6b7280;
+            --accent-primary: #2563eb;
+            --accent-primary-hover: #1d4ed8;
+            --danger-color: #dc2626;
+            --danger-color-hover: #b91c1c;
+            --sidebar-bg: rgba(255, 255, 255, 0.7);
+            --header-bg: rgba(243, 244, 246, 0.7);
+            --modal-bg: #ffffff;
+            --user-bubble-bg: linear-gradient(135deg, #3b82f6, #60a5fa);
+            --model-bubble-bg: #e5e7eb;
+            --code-bg: #f3f4f6;
+        }
+
+        body { 
+            font-family: var(--font-family); 
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            transition: background-color 0.3s, color 0.3s;
+        }
+        
+        .glass-effect {
+            -webkit-backdrop-filter: blur(12px);
+            backdrop-filter: blur(12px);
+            border-color: var(--border-color);
+        }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+
+        .sidebar { background-color: var(--sidebar-bg); border-right: 1px solid; }
+        .main-header { background-color: var(--header-bg); border-bottom: 1px solid; position: relative; z-index: 20; }
+        .chat-input-area { background-color: var(--bg-primary); border-top: 1px solid var(--border-color); }
+        .chat-input { background-color: var(--bg-tertiary); color: var(--text-primary); }
+        .user-bubble { background: var(--user-bubble-bg); color: white; }
+        .model-bubble { background-color: var(--model-bubble-bg); color: var(--text-primary); }
+        .recent-chat-item.active-chat { background-color: var(--bg-tertiary); }
+        .markdown-content pre { background-color: var(--code-bg); border: 1px solid var(--border-color); }
+        .markdown-content code:not(pre code) { background-color: var(--bg-tertiary); padding: 0.2rem 0.4rem; border-radius: 0.25rem; font-size: 0.9em; }
+        .markdown-content a {
+            color: var(--accent-primary);
+            text-decoration: underline;
+        }
+        .markdown-content {
+            overflow-wrap: break-word;
+        }
+        .modal-content { background-color: var(--modal-bg); border: 1px solid var(--border-color); }
+        .recents-heading { color: var(--text-muted); }
+
+        .message-pop-in { animation: popIn 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) both; }
+        @keyframes popIn { 0% { opacity: 0; transform: scale(0.95) translateY(10px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
+        
+        .new-chat-btn {
+            background: var(--accent-primary);
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px -5px var(--accent-primary);
+        }
+        .new-chat-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px -5px var(--accent-primary);
+        }
+
+        main {
+            transition: margin-left 0.3s ease-in-out;
+        }
+
+        .user-message-container .action-buttons {
+            opacity: 0;
+            transition: opacity 0.2s ease-in-out;
+            display: flex;
+            flex-direction: column;
+        }
+        .user-message-container:hover .action-buttons {
+            opacity: 1;
+        }
+        
+        .listening {
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+        }
+
+        .recent-chat-item .chat-actions {
+            display: none;
+        }
+        .recent-chat-item:hover .chat-actions {
+            display: flex;
+        }
+        .pin-btn.pinned {
+            color: #facc15; /* Tailwind yellow-400 */
+        }
+        
+        .doc-option-btn {
+            background-color: var(--bg-tertiary);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+        }
+        .doc-option-btn.active {
+            background-color: var(--accent-primary);
+            color: white;
+            border-color: var(--accent-primary);
+        }
+        .custom-select {
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+
+        #background-container {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            background-size: cover;
+            background-position: center;
+            transition: opacity 0.5s ease-in-out, background-image 0.5s ease-in-out;
+        }
+        
+        /* --- NEW: Fullscreen Image Viewer Styles --- */
+        #fullscreen-image-viewer {
+            background-color: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+        #fullscreen-image {
+            max-width: 90vw;
+            max-height: 80vh;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="background-container"></div>
+
+    <div class="flex h-screen w-full">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="sidebar glass-effect w-64 p-4 flex-col flex fixed h-full z-40 transition-transform duration-300 ease-in-out">
+            <button id="close-menu-btn" class="md:hidden absolute top-2 right-2 p-2 rounded-full hover:bg-gray-700/50"><i data-lucide="x" class="w-6 h-6"></i></button>
+            <div class="flex items-center mb-6 mt-8 md:mt-0"><img src="/image.png" alt="AstraNova Logo" class="w-8 h-8 rounded-lg mr-3"><h1 class="text-xl font-bold">AstraNova</h1></div>
+            <button id="new-chat-btn" class="new-chat-btn flex items-center justify-center w-full text-white font-semibold py-2.5 px-4 rounded-lg">
+                <i data-lucide="plus" class="w-5 h-5 mr-2"></i>New Chat
+            </button>
+            <div id="recent-chats-container" class="mt-8 flex-1 overflow-y-auto pr-1">
+                <h2 class="recents-heading text-xs font-semibold uppercase tracking-wider">Recent</h2>
+                <nav id="recent-chats-list" class="mt-4 space-y-1"></nav>
+            </div>
+            <div class="mt-auto pt-4 border-t" style="border-color: var(--border-color);">
+                <button id="settings-btn" class="flex items-center w-full p-2 rounded-lg transition-colors" style="color: var(--text-secondary);" onmouseover="this.style.backgroundColor='var(--bg-tertiary)';" onmouseout="this.style.backgroundColor='transparent';">
+                    <i data-lucide="settings" class="w-5 h-5 mr-3"></i>
+                    <span class="text-sm">Settings</span>
+                </button>
+            </div>
+            <div class="pt-2">
+                <p class="text-xs text-center" style="color: var(--text-muted);">&copy; 2025 ASTRANOVA AI LABS</p>
+            </div>
+        </aside>
+
+        <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden md:hidden"></div>
+
+        <!-- Main content area -->
+        <main id="main-content" class="flex-1 flex flex-col" style="background-color: transparent;">
+            <header class="main-header glass-effect flex items-center justify-between p-2 md:p-4">
+                 <div class="flex items-center flex-1 min-w-0">
+                    <button id="menu-btn" class="mr-2 p-2 rounded-full" onmouseover="this.style.backgroundColor='var(--bg-tertiary)';" onmouseout="this.style.backgroundColor='transparent';"><i data-lucide="menu" class="w-6 h-6"></i></button>
+                    <div class="relative">
+                        <button id="model-selector-btn" class="flex items-center space-x-2 px-3 py-2 rounded-lg" style="background-color: var(--bg-tertiary); border: 1px solid var(--border-color);" onmouseover="this.style.backgroundColor='var(--bg-input)';" onmouseout="this.style.backgroundColor='var(--bg-tertiary)';">
+                            <span id="model-icon-container"><i data-lucide="message-circle" class="w-5 h-5"></i></span>
+                            <span id="model-name" class="text-sm font-semibold">AstraNova Pro</span>
+                            <i data-lucide="chevron-down" class="w-4 h-4" style="color: var(--text-muted);"></i>
+                        </button>
+                        <div id="model-dropdown" class="hidden absolute top-full mt-2 w-60 rounded-lg z-50 shadow-lg" style="background-color: var(--modal-bg); border: 1px solid var(--border-color);">
+                            <a href="#" data-model="chat" class="flex items-start p-3 rounded-t-lg" onmouseover="this.style.backgroundColor='var(--bg-tertiary)';" onmouseout="this.style.backgroundColor='transparent';"><i data-lucide="message-circle" class="w-5 h-5 mr-3 mt-1 text-blue-400"></i><div><p class="font-semibold">AstraNova Pro</p><p class="text-xs" style="color: var(--text-muted);">Conversational AI with Vision.</p></div></a>
+                            <a href="#" data-model="image" class="flex items-start p-3" onmouseover="this.style.backgroundColor='var(--bg-tertiary)';" onmouseout="this.style.backgroundColor='transparent';"><i data-lucide="image" class="w-5 h-5 mr-3 mt-1 text-purple-400"></i><div><p class="font-semibold">AstraNova Imaging</p><p class="text-xs" style="color: var(--text-muted);">Generate images from text.</p></div></a>
+                            <a href="#" data-model="docs" class="flex items-start p-3 rounded-b-lg" onmouseover="this.style.backgroundColor='var(--bg-tertiary)';" onmouseout="this.style.backgroundColor='transparent';"><i data-lucide="file-text" class="w-5 h-5 mr-3 mt-1 text-green-400"></i><div><p class="font-semibold">AstraNova Docs</p><p class="text-xs" style="color: var(--text-muted);">Generate PDF & PPTX files.</p></div></a>
+                        </div>
+                    </div>
+                     <span id="chat-title" class="text-lg font-semibold ml-4 truncate" title="New Chat">New Chat</span>
+                </div>
+                <button id="summarize-btn" class="hidden flex items-center space-x-2 p-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50"><i data-lucide="wand-sparkles" class="w-5 h-5"></i><span class="text-sm font-semibold text-white">Summarize</span></button>
+            </header>
+
+            <div id="chat-window" class="flex-1 overflow-y-auto p-4 md:p-8"><div class="max-w-3xl mx-auto w-full"></div></div>
+
+            <div class="chat-input-area p-4">
+                <div class="max-w-3xl mx-auto w-full">
+                    <div id="stop-generating-container" class="flex justify-center mb-2 hidden"><button id="stop-generating-btn" class="flex items-center space-x-2 p-2 px-4 text-sm rounded-lg bg-red-800 hover:bg-red-700 text-white"><i data-lucide="square" class="w-4 h-4"></i><span>Stop Generating</span></button></div>
+                    
+                    <div id="doc-options-container" class="hidden mb-2 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm font-medium" style="color: var(--text-secondary);">File Type:</span>
+                            <div id="doc-type-group" class="flex space-x-2">
+                                <button data-doc-type="pdf" class="doc-option-btn active px-3 py-1 text-sm rounded-md">PDF</button>
+                                <button data-doc-type="pptx" class="doc-option-btn px-3 py-1 text-sm rounded-md">PPTX</button>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm font-medium" style="color: var(--text-secondary);">Length:</span>
+                            <div id="doc-length-group" class="flex space-x-2">
+                                <button data-doc-length="short" class="doc-option-btn px-3 py-1 text-sm rounded-md">Short</button>
+                                <button data-doc-length="medium" class="doc-option-btn active px-3 py-1 text-sm rounded-md">Medium</button>
+                                <button data-doc-length="detailed" class="doc-option-btn px-3 py-1 text-sm rounded-md">Detailed</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="image-preview-container" class="mb-2 hidden"><div class="relative inline-block bg-gray-900 p-1 rounded-lg"><img id="image-preview" src="" class="max-h-24 rounded-md"><button id="remove-image-btn" class="absolute -top-2 -right-2 bg-gray-600 hover:bg-gray-500 rounded-full p-1 text-white"><i data-lucide="x" class="w-4 h-4"></i></button></div></div>
+                    <form id="chat-form" class="relative">
+                        <input type="file" id="image-upload-input" class="hidden" accept="image/*">
+                        <button type="button" id="attach-btn" class="absolute left-3 top-1/2 -translate-y-1/2 p-2 rounded-full" onmouseover="this.style.backgroundColor='var(--bg-tertiary)';" onmouseout="this.style.backgroundColor='transparent';"><i data-lucide="paperclip" class="w-5 h-5" style="color: var(--text-muted);"></i></button>
+                        <textarea id="chat-input" placeholder="Interface with AstraNova..." class="chat-input w-full rounded-lg p-4 pl-14 pr-28 resize-none focus:outline-none focus:ring-2" style="border: 1px solid var(--border-color); --tw-ring-color: var(--accent-primary);" rows="1"></textarea>
+                        <button type="button" id="voice-input-btn" class="absolute right-16 top-1/2 -translate-y-1/2 p-2 rounded-full transition-colors" onmouseover="this.style.backgroundColor='var(--bg-tertiary)';" onmouseout="this.style.backgroundColor='transparent';">
+                            <i data-lucide="mic" class="w-5 h-5" style="color: var(--text-muted);"></i>
+                        </button>
+                        <button type="submit" id="submit-btn" class="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full disabled:opacity-50 disabled:cursor-not-allowed" style="background-color: var(--accent-primary);"><i data-lucide="arrow-up" class="w-5 h-5 text-white"></i></button>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+        <div class="modal-content rounded-xl shadow-2xl w-full max-w-2xl p-6 message-pop-in max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold">Settings</h2>
+                <button id="close-settings-btn" class="p-2 rounded-full" onmouseover="this.style.backgroundColor='var(--bg-tertiary)';" onmouseout="this.style.backgroundColor='transparent';"><i data-lucide="x" class="w-6 h-6"></i></button>
+            </div>
+            <div class="space-y-4">
+                <div class="py-2">
+                    <h3 class="text-lg font-semibold mb-2">Appearance</h3>
+                    <div class="flex items-center justify-between py-2">
+                        <span style="color: var(--text-secondary);">Theme</span>
+                        <div class="flex items-center space-x-2">
+                            <i data-lucide="sun" class="text-yellow-400"></i>
+                            <label for="theme-toggle" class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="theme-toggle" class="sr-only peer">
+                                <div class="w-11 h-6 bg-gray-600 rounded-full peer peer-focus:ring-2 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600" style="--tw-ring-color: var(--accent-primary);"></div>
+                            </label>
+                            <i data-lucide="moon" class="text-blue-400"></i>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between py-2">
+                        <span style="color: var(--text-secondary);">Font</span>
+                        <select id="font-selector" class="custom-select rounded-md px-2 py-1 text-sm">
+                            <option value="'Inter', sans-serif">Inter (Default)</option>
+                            <option value="'Lora', serif">Lora (Serif)</option>
+                            <option value="'Roboto Mono', monospace">Roboto Mono (Mono)</option>
+                            <option value="'Playfair Display', serif">Playfair Display</option>
+                            <option value="'Source Code Pro', monospace">Source Code Pro</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center justify-between py-2">
+                        <span style="color: var(--text-secondary);">Background</span>
+                        <select id="background-selector" class="custom-select rounded-md px-2 py-1 text-sm">
+                            <option value="none">None</option>
+                            <option value="cars">Cars Racing</option>
+                            <option value="garden">Flower Garden</option>
+                            <option value="galaxy">Stars & Galaxy</option>
+                            <option value="sky">Blue Sky & Grassland</option>
+                            <option value="mountain">Night Sky Mountain</option>
+                            <option value="snow">Snowy City</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center justify-between py-2">
+                        <span style="color: var(--text-secondary);">Background Opacity</span>
+                        <input type="range" id="opacity-slider" min="0.1" max="1" step="0.1" class="w-32">
+                    </div>
+                </div>
+
+                <div class="py-2 border-t" style="border-color: var(--border-color);">
+                    <h3 class="text-lg font-semibold mb-2">Voice</h3>
+                    <div class="flex items-center justify-between py-2">
+                        <span style="color: var(--text-secondary);">Speak Responses Automatically</span>
+                        <div class="flex items-center space-x-2">
+                            <i data-lucide="volume-x" class="text-red-400"></i>
+                            <label for="voice-toggle" class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="voice-toggle" class="sr-only peer">
+                                <div class="w-11 h-6 bg-gray-600 rounded-full peer peer-focus:ring-2 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600" style="--tw-ring-color: var(--accent-primary);"></div>
+                            </label>
+                            <i data-lucide="volume-2" class="text-green-400"></i>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between py-2">
+                        <span style="color: var(--text-secondary);">Accent</span>
+                        <div class="flex items-center">
+                            <select id="voice-selector" class="custom-select rounded-md px-2 py-1 text-sm w-48">
+                                <option>Loading voices...</option>
+                            </select>
+                            <button id="voice-preview-btn" class="p-2 rounded-full ml-2" onmouseover="this.style.backgroundColor='var(--bg-tertiary)';" onmouseout="this.style.backgroundColor='transparent';">
+                                <i data-lucide="play-circle" class="w-5 h-5" style="color: var(--text-secondary);"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="py-2 border-t" style="border-color: var(--border-color);">
+                     <label for="custom-instruction-input" class="block text-sm font-medium" style="color: var(--text-secondary);">Generate AI Theme</label>
+                     <p class="text-xs mt-1 mb-2" style="color: var(--text-muted);">Describe a background you'd like to create.</p>
+                     <div class="flex items-center space-x-2">
+                        <input id="theme-prompt-input" class="chat-input w-full rounded-lg p-2" style="border: 1px solid var(--border-color);" placeholder="e.g., a futuristic city at night">
+                        <button id="generate-theme-btn" class="p-2 rounded-lg" style="background-color: var(--accent-primary);">
+                            <i data-lucide="wand-2" class="w-5 h-5 text-white"></i>
+                        </button>
+                     </div>
+                     <div id="theme-preview-container" class="hidden mt-2">
+                         <div id="theme-preview-box" class="w-full h-32 rounded-lg bg-cover bg-center"></div>
+                         <div class="flex justify-end space-x-2 mt-2">
+                             <button id="regenerate-theme-btn" class="p-2 rounded-lg" style="background-color: var(--bg-tertiary);"><i data-lucide="refresh-cw" class="w-4 h-4"></i></button>
+                             <button id="apply-theme-btn" class="px-4 py-2 text-sm font-semibold rounded-lg text-white" style="background-color: var(--accent-primary);">Apply Theme</button>
+                         </div>
+                     </div>
+                </div>
+
+                <div class="py-2 border-t" style="border-color: var(--border-color);">
+                    <span style="color: var(--text-secondary);">Export Conversation</span>
+                    <button id="export-chat-btn" class="mt-2 flex items-center space-x-2 px-3 py-1.5 rounded-lg text-sm w-full" style="color: var(--accent-primary);" onmouseover="this.style.backgroundColor='var(--bg-tertiary)';" onmouseout="this.style.backgroundColor='transparent';">
+                        <i data-lucide="download" class="w-4 h-4"></i>
+                        <span>Export as Markdown</span>
+                    </button>
+                </div>
+                <div class="py-2 border-t" style="border-color: var(--border-color);">
+                     <label for="custom-instruction-input" class="block text-sm font-medium" style="color: var(--text-secondary);">Custom Instructions</label>
+                     <p class="text-xs mt-1 mb-2" style="color: var(--text-muted);">This will override the default personality for the current chat only.</p>
+                     <textarea id="custom-instruction-input" rows="4" class="chat-input w-full rounded-lg p-2 resize-none focus:outline-none focus:ring-2" style="border: 1px solid var(--border-color); --tw-ring-color: var(--accent-primary);" placeholder="e.g., You are a master chef. Provide short, simple recipes."></textarea>
+                     <div class="flex justify-end mt-2">
+                         <button id="save-instruction-btn" class="flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-semibold text-white" style="background-color: var(--accent-primary);">
+                             <i data-lucide="save" class="w-4 h-4"></i>
+                             <span>Save for this Chat</span>
+                         </button>
+                     </div>
+                </div>
+                <div class="py-2 border-t" style="border-color: var(--border-color);">
+                    <span class="font-medium" style="color: var(--danger-color);">Danger Zone</span>
+                     <button id="clear-chats-btn" class="mt-2 flex items-center space-x-2 px-3 py-1.5 rounded-lg text-sm w-full" style="color: var(--danger-color);" onmouseover="this.style.backgroundColor='var(--bg-tertiary)';" onmouseout="this.style.backgroundColor='transparent';">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        <span>Clear All Conversations</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Confirmation Modal -->
+    <div id="confirmation-modal" class="fixed inset-0 bg-black/60 z-[60] hidden items-center justify-center p-4">
+        <div class="modal-content rounded-xl shadow-2xl w-full max-w-sm p-6 message-pop-in text-center">
+            <div class="flex justify-center mb-4">
+                <div class="w-12 h-12 rounded-full flex items-center justify-center" style="background-color: rgba(239, 68, 68, 0.1);">
+                    <i data-lucide="alert-triangle" class="w-6 h-6" style="color: var(--danger-color);"></i>
+                </div>
+            </div>
+            <h3 id="confirmation-title" class="text-lg font-semibold mb-2">Are you sure?</h3>
+            <p id="confirmation-message" class="text-sm mb-6" style="color: var(--text-muted);">This action cannot be undone.</p>
+            <div class="flex justify-center gap-4">
+                <button id="confirm-cancel-btn" class="px-6 py-2 rounded-lg" style="background-color: var(--bg-tertiary);">Cancel</button>
+                <button id="confirm-action-btn" class="px-6 py-2 rounded-lg text-white" style="background-color: var(--danger-color);" onmouseover="this.style.backgroundColor='var(--danger-color-hover)';" onmouseout="this.style.backgroundColor='var(--danger-color)';">Confirm</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- --- NEW: Fullscreen Image Viewer --- -->
+    <div id="fullscreen-image-viewer" class="fixed inset-0 z-[70] hidden items-center justify-center p-4">
+        <div class="absolute top-4 right-4 flex space-x-2">
+            <a id="fullscreen-download-btn" href="#" download="astranova-image.png" class="p-2 rounded-full bg-black/50 text-white hover:bg-black/75">
+                <i data-lucide="download" class="w-6 h-6"></i>
+            </a>
+            <button id="fullscreen-close-btn" class="p-2 rounded-full bg-black/50 text-white hover:bg-black/75">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+        </div>
+        <img id="fullscreen-image" src="" alt="Fullscreen Image" class="rounded-lg shadow-2xl object-contain">
+    </div>
+
+    <script>
+        // --- Configuration & State ---
+        const config = { 
+            backendUrl: window.location.origin, 
+            defaultAvatar: "/image.png",
+            backgrounds: {
+                cars: 'https://www.motortrend.com/uploads/sites/11/2018/12/50-Years-of-IMSA-16.jpg',
+                garden: 'https://d3w13n53foase7.cloudfront.net/medium_keukenhof-the-garden-of-europe-a-flowery-experience-y0rd_image.jpg',
+                galaxy: 'https://media.istockphoto.com/id/1183329518/photo/cosmic-nebula-and-the-shining-stars.jpg?s=612x612&w=0&k=20&c=vUDLnwMgAfur-NimT59lWDWFzVkdlaiyzx4OPXG_hBU=',
+                sky: 'https://images.unsplash.com/photo-1597801038590-9e3a24bcd6b7?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8Z3JlZW4lMjBncmFzcyUyMGJsdWUlMjBza3l8ZW58MHx8MHx8fDA%3D',
+                mountain: 'https://t4.ftcdn.net/jpg/01/41/04/89/360_F_141048901_uLh0JpYMLv35L095YnQj1uzu3a8FPOE9.jpg',
+                snow: 'https://images.stockcake.com/public/3/1/2/31234741-3165-4925-b068-a0788f4def63_large/snowy-city-street-stockcake.jpg'
+            }
+        };
+        const DOMElements = {
+            html: document.documentElement,
+            body: document.body,
+            mainContent: document.getElementById('main-content'),
+            chatForm: document.getElementById('chat-form'), chatInput: document.getElementById('chat-input'), chatWindow: document.getElementById('chat-window').querySelector('.max-w-3xl'),
+            newChatBtn: document.getElementById('new-chat-btn'), menuBtn: document.getElementById('menu-btn'), closeMenuBtn: document.getElementById('close-menu-btn'),
+            sidebar: document.getElementById('sidebar'), sidebarOverlay: document.getElementById('sidebar-overlay'), recentChatsList: document.getElementById('recent-chats-list'),
+            summarizeBtn: document.getElementById('summarize-btn'), chatTitle: document.getElementById('chat-title'), submitBtn: document.getElementById('submit-btn'),
+            modelSelectorBtn: document.getElementById('model-selector-btn'), modelDropdown: document.getElementById('model-dropdown'), modelName: document.getElementById('model-name'),
+            modelIconContainer: document.getElementById('model-icon-container'), attachBtn: document.getElementById('attach-btn'), imageUploadInput: document.getElementById('image-upload-input'),
+            imagePreviewContainer: document.getElementById('image-preview-container'), imagePreview: document.getElementById('image-preview'), removeImageBtn: document.getElementById('remove-image-btn'),
+            stopGeneratingContainer: document.getElementById('stop-generating-container'), stopGeneratingBtn: document.getElementById('stop-generating-btn'),
+            settingsBtn: document.getElementById('settings-btn'),
+            settingsModal: document.getElementById('settings-modal'),
+            closeSettingsBtn: document.getElementById('close-settings-btn'),
+            themeToggle: document.getElementById('theme-toggle'),
+            hljsTheme: document.getElementById('hljs-theme'),
+            exportChatBtn: document.getElementById('export-chat-btn'),
+            customInstructionInput: document.getElementById('custom-instruction-input'),
+            saveInstructionBtn: document.getElementById('save-instruction-btn'),
+            clearChatsBtn: document.getElementById('clear-chats-btn'),
+            confirmationModal: document.getElementById('confirmation-modal'),
+            confirmationTitle: document.getElementById('confirmation-title'),
+            confirmationMessage: document.getElementById('confirmation-message'),
+            confirmActionBtn: document.getElementById('confirm-action-btn'),
+            confirmCancelBtn: document.getElementById('confirm-cancel-btn'),
+            voiceInputBtn: document.getElementById('voice-input-btn'),
+            voiceToggle: document.getElementById('voice-toggle'),
+            docOptionsContainer: document.getElementById('doc-options-container'),
+            docTypeGroup: document.getElementById('doc-type-group'),
+            docLengthGroup: document.getElementById('doc-length-group'),
+            fontSelector: document.getElementById('font-selector'),
+            voiceSelector: document.getElementById('voice-selector'),
+            backgroundContainer: document.getElementById('background-container'),
+            backgroundSelector: document.getElementById('background-selector'),
+            opacitySlider: document.getElementById('opacity-slider'),
+            voicePreviewBtn: document.getElementById('voice-preview-btn'),
+            themePromptInput: document.getElementById('theme-prompt-input'),
+            generateThemeBtn: document.getElementById('generate-theme-btn'),
+            themePreviewContainer: document.getElementById('theme-preview-container'),
+            themePreviewBox: document.getElementById('theme-preview-box'),
+            regenerateThemeBtn: document.getElementById('regenerate-theme-btn'),
+            applyThemeBtn: document.getElementById('apply-theme-btn'),
+            fullscreenImageViewer: document.getElementById('fullscreen-image-viewer'),
+            fullscreenImage: document.getElementById('fullscreen-image'),
+            fullscreenDownloadBtn: document.getElementById('fullscreen-download-btn'),
+            fullscreenCloseBtn: document.getElementById('fullscreen-close-btn'),
+        };
+        let state = { chatHistory: [], currentChatId: null, isSubmitting: false, selectedModel: 'chat', attachedImageB64: null, abortController: new AbortController(), customInstruction: '', isListening: false, isSpeechEnabled: false, docType: 'pdf', docLength: 'medium', aiThemeCache: null };
+
+        // --- Chat & UI Management ---
+        const getSavedChats = () => JSON.parse(localStorage.getItem('astraNovaChats') || '{}');
+        const saveChats = (chats) => localStorage.setItem('astraNovaChats', JSON.stringify(chats));
+
+        const applyTheme = (theme) => {
+            DOMElements.themeToggle.checked = theme === 'dark';
+            DOMElements.html.classList.toggle('light', theme === 'light');
+            DOMElements.html.classList.toggle('dark', theme === 'dark');
+            DOMElements.hljsTheme.href = `https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-${theme}.min.css`;
+        };
+        const toggleTheme = () => {
+            const newTheme = DOMElements.html.classList.contains('dark') ? 'light' : 'dark';
+            applyTheme(newTheme);
+            localStorage.setItem('astraNovaTheme', newTheme);
+        };
+        
+        const applySidebarState = (isCollapsed) => {
+            DOMElements.sidebar.classList.toggle('-translate-x-full', isCollapsed);
+            if (window.innerWidth >= 768) { 
+                DOMElements.mainContent.style.marginLeft = isCollapsed ? '0' : '16rem';
+                DOMElements.sidebarOverlay.classList.add('hidden');
+            } else { 
+                DOMElements.mainContent.style.marginLeft = '0';
+                DOMElements.sidebarOverlay.classList.toggle('hidden', isCollapsed);
+            }
+        };
+
+        const toggleSidebar = () => {
+            const isCollapsed = !DOMElements.sidebar.classList.contains('-translate-x-full');
+            applySidebarState(isCollapsed);
+            localStorage.setItem('sidebarCollapsed', isCollapsed);
+        };
+
+        let confirmCallback = null;
+        const showConfirmation = (title, message, onConfirm) => {
+            DOMElements.confirmationTitle.textContent = title;
+            DOMElements.confirmationMessage.textContent = message;
+            confirmCallback = onConfirm;
+            DOMElements.confirmationModal.style.display = 'flex';
+            lucide.createIcons();
+        };
+        const hideConfirmation = () => {
+            DOMElements.confirmationModal.style.display = 'none';
+            confirmCallback = null;
+        };
+
+        const applyFont = (fontFamily) => {
+            DOMElements.body.style.setProperty('--font-family', fontFamily);
+        };
+
+        let availableVoices = [];
+        const populateVoices = () => {
+            availableVoices = synth.getVoices().filter(voice => voice.lang.startsWith('en'));
+            DOMElements.voiceSelector.innerHTML = '';
+            availableVoices.forEach(voice => {
+                const option = document.createElement('option');
+                option.textContent = `${voice.name} (${voice.lang})`;
+                option.value = voice.name;
+                DOMElements.voiceSelector.appendChild(option);
+            });
+            const savedVoice = localStorage.getItem('astraNovaVoice');
+            if (savedVoice) {
+                DOMElements.voiceSelector.value = savedVoice;
+            }
+        };
+        
+        const applyBackground = (theme, opacity) => {
+            if (theme === 'none') {
+                DOMElements.backgroundContainer.style.backgroundImage = 'none';
+                DOMElements.opacitySlider.disabled = true;
+                DOMElements.body.style.backgroundColor = 'var(--bg-primary)';
+            } else if (theme === 'ai') {
+                const aiThemeUrl = localStorage.getItem('astraNovaAIThemeURL');
+                if (aiThemeUrl) {
+                    DOMElements.backgroundContainer.style.backgroundImage = `url(${aiThemeUrl})`;
+                    DOMElements.backgroundContainer.style.opacity = opacity;
+                    DOMElements.opacitySlider.disabled = false;
+                    DOMElements.body.style.backgroundColor = 'transparent';
+                }
+            } else {
+                DOMElements.backgroundContainer.style.backgroundImage = `url(${config.backgrounds[theme]})`;
+                DOMElements.backgroundContainer.style.opacity = opacity;
+                DOMElements.opacitySlider.disabled = false;
+                DOMElements.body.style.backgroundColor = 'transparent';
+            }
+        };
+
+        // --- Helper Functions ---
+        const escapeHtml = (unsafe) => unsafe ? unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;") : "";
+        const escapeBackticks = (str) => str ? str.replace(/`/g, '\\`') : '';
+        const scrollToBottom = () => { const cont = document.getElementById('chat-window'); cont.scrollTop = cont.scrollHeight; };
+        const autoResizeTextarea = () => { DOMElements.chatInput.style.height = 'auto'; DOMElements.chatInput.style.height = (DOMElements.chatInput.scrollHeight) + 'px'; };
+        const removeAttachedImage = () => { state.attachedImageB64 = null; DOMElements.imageUploadInput.value = ''; DOMElements.imagePreviewContainer.classList.add('hidden'); };
+        const setSubmitting = (isSubmitting) => {
+            state.isSubmitting = isSubmitting;
+            [DOMElements.submitBtn, DOMElements.chatInput, DOMElements.summarizeBtn].forEach(el => el.disabled = isSubmitting);
+            DOMElements.submitBtn.innerHTML = isSubmitting ? `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i>` : `<i data-lucide="arrow-up" class="w-5 h-5 text-white"></i>`;
+            DOMElements.stopGeneratingContainer.classList.toggle('hidden', !isSubmitting);
+            lucide.createIcons();
+        };
+
+        // --- UI Rendering ---
+        const addUserMessage = (text, imageB64, index) => {
+            const imageHTML = imageB64 ? `<img src="${imageB64}" class="max-w-xs rounded-lg mt-2" alt="User Upload">` : '';
+            const actionButtonsHTML = text ? `
+                <div class="action-buttons">
+                    <button onclick="copyUserPrompt(this, \`${escapeBackticks(text)}\`)" class="p-1 rounded-full" style="color: var(--text-muted);" onmouseover="this.style.backgroundColor='var(--bg-tertiary)';" onmouseout="this.style.backgroundColor='transparent';">
+                        <i data-lucide="copy" class="w-4 h-4"></i>
+                    </button>
+                    <button onclick="editUserPrompt(${index})" class="p-1 rounded-full" style="color: var(--text-muted);" onmouseover="this.style.backgroundColor='var(--bg-tertiary)';" onmouseout="this.style.backgroundColor='transparent';">
+                        <i data-lucide="pencil" class="w-4 h-4"></i>
+                    </button>
+                </div>` : '';
+
+            const messageHTML = `
+                <div class="user-message-container flex items-start gap-2 mb-6 justify-end message-pop-in" data-message-index="${index}">
+                    ${actionButtonsHTML}
+                    <div class="user-bubble p-4 rounded-2xl rounded-br-lg shadow-md max-w-xl">
+                        ${text ? `<p>${escapeHtml(text)}</p>` : ''}
+                        ${imageHTML}
+                    </div>
+                </div>`;
+            DOMElements.chatWindow.innerHTML += messageHTML;
+            lucide.createIcons();
+            scrollToBottom();
+        };
+
+        const editUserPrompt = (index) => {
+            if (state.isSubmitting) return;
+            const turnToEdit = state.chatHistory[index];
+            if (!turnToEdit || turnToEdit.role !== 'user') return;
+            const textToEdit = turnToEdit.parts.find(p => p.text)?.text || '';
+            DOMElements.chatInput.value = textToEdit;
+            DOMElements.chatInput.focus();
+            autoResizeTextarea();
+            const allMessages = DOMElements.chatWindow.querySelectorAll('[data-message-index]');
+            allMessages.forEach(msg => {
+                if (parseInt(msg.dataset.messageIndex) >= index) {
+                    msg.remove();
+                }
+            });
+            state.chatHistory = state.chatHistory.slice(0, index);
+        };
+
+        const copyUserPrompt = (buttonElement, text) => {
+            if (!text) return;
+            navigator.clipboard.writeText(text).then(() => {
+                buttonElement.innerHTML = '<i data-lucide="check" class="w-4 h-4 text-green-400"></i>';
+                lucide.createIcons(); 
+                setTimeout(() => {
+                    buttonElement.innerHTML = '<i data-lucide="copy" class="w-4 h-4"></i>';
+                    lucide.createIcons();
+                }, 2000);
+            });
+        };
+
+        const addAstraMessageBubble = (index) => {
+            const messageId = `msg-${crypto.randomUUID()}`;
+            const messageHTML = `<div id="${messageId}" class="flex items-start gap-3 mb-6 message-pop-in" data-message-index="${index}"><img src="${config.defaultAvatar}" class="w-10 h-10 rounded-xl flex-shrink-0"><div class="model-bubble p-4 rounded-2xl rounded-bl-lg shadow-md w-full max-w-xl"><p class="font-semibold mb-2">AstraNova</p><div class="markdown-content space-y-3"><div class="typing-indicator"><span></span><span></span><span></span></div></div></div></div>`;
+            DOMElements.chatWindow.innerHTML += messageHTML;
+            scrollToBottom();
+            const messageDiv = document.getElementById(messageId);
+            return { container: messageDiv, content: messageDiv.querySelector('.markdown-content') };
+        };
+        const addModelResponseMessage = (content, index) => {
+            const messageId = `msg-${crypto.randomUUID()}`;
+            const actionButtonsHTML = `
+                <div class="absolute top-2 right-2 flex items-center">
+                    <button onclick="playSpeech(\`${escapeBackticks(content.fullText)}\`)" class="p-1 rounded-full" style="color: var(--text-muted);" onmouseover="this.style.backgroundColor='var(--bg-tertiary)';" onmouseout="this.style.backgroundColor='transparent';">
+                        <i data-lucide="volume-2" class="w-4 h-4"></i>
+                    </button>
+                    <button onclick="handleRegenerate()" class="p-1 rounded-full" style="color: var(--text-muted);" onmouseover="this.style.backgroundColor='var(--bg-tertiary)';" onmouseout="this.style.backgroundColor='transparent';">
+                        <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                    </button>
+                </div>`;
+
+            const imageHTML = `<img src="${content.data}" class="max-w-full md:max-w-md rounded-lg mt-2 cursor-pointer" alt="Generated Image" onclick="showImageFullscreen('${content.data}')">`;
+            
+            const downloadButtonHTML = content.type === 'image' ? `
+                <a href="${content.data}" download="astranova-image.png" class="flex items-center space-x-2 mt-4 p-2 rounded-lg text-sm" style="color: var(--accent-primary);" onmouseover="this.style.backgroundColor='var(--bg-tertiary)';" onmouseout="this.style.backgroundColor='transparent';">
+                    <i data-lucide="download" class="w-4 h-4"></i>
+                    <span>Download Image</span>
+                </a>` : content.type === 'doc' ? `
+                <a href="${config.backendUrl}${content.data.downloadUrl}" download="${content.data.filename}" class="flex items-center space-x-2 mt-4 p-2 rounded-lg text-sm" style="color: var(--accent-primary);" onmouseover="this.style.backgroundColor='var(--bg-tertiary)';" onmouseout="this.style.backgroundColor='transparent';">
+                    <i data-lucide="download" class="w-4 h-4"></i>
+                    <span>Download ${content.data.filename}</span>
+                </a>` : '';
+
+            const innerHTML = content.type === 'image'
+                ? `<p class="font-semibold mb-2">Stellar Forge Output</p>${imageHTML}${actionButtonsHTML}`
+                : content.type === 'doc'
+                ? `<p class="font-semibold mb-2">Document Forge Output</p><p>Your document is ready.</p>${downloadButtonHTML}`
+                : `<div class="relative"><p class="font-semibold mb-2">AstraNova</p>${actionButtonsHTML}<div class="markdown-content space-y-3">${content.data}</div></div>`;
+            
+            const messageHTML = `<div id="${messageId}" class="flex items-start gap-3 mb-6 message-pop-in" data-message-index="${index}"><img src="${config.defaultAvatar}" class="w-10 h-10 rounded-xl flex-shrink-0"><div class="model-bubble p-4 rounded-2xl rounded-bl-lg shadow-md w-full max-w-xl">${innerHTML}</div></div>`;
+            DOMElements.chatWindow.innerHTML += messageHTML;
+            const messageDiv = document.getElementById(messageId);
+            if (content.type === 'text' || content.type === 'doc') {
+                messageDiv.querySelectorAll('pre code').forEach(block => {
+                    if(block.innerText) { hljs.highlightElement(block); addCopyButton(block.parentElement); }
+                });
+                messageDiv.querySelectorAll('a').forEach(link => {
+                    link.target = '_blank';
+                });
+            }
+            lucide.createIcons();
+            scrollToBottom();
+        };
+        const addCopyButton = (preElement) => {
+            const button = document.createElement('button');
+            button.className = 'copy-code-btn';
+            button.innerHTML = '<i data-lucide="copy" class="w-4 h-4"></i>';
+            button.onclick = () => {
+                navigator.clipboard.writeText(preElement.querySelector('code').innerText).then(() => {
+                    button.innerHTML = '<i data-lucide="check" class="w-4 h-4 text-green-400"></i>';
+                    lucide.createIcons();
+                    setTimeout(() => { button.innerHTML = '<i data-lucide="copy" class="w-4 h-4"></i>'; lucide.createIcons(); }, 2000);
+                });
+            };
+            preElement.appendChild(button);
+            lucide.createIcons();
+        };
+        
+        const exportChat = () => {
+            if (state.chatHistory.length === 0) return;
+            const title = DOMElements.chatTitle.textContent || 'AstraNova Chat';
+            let markdownContent = `# ${title}\n\n`;
+            state.chatHistory.forEach(turn => {
+                if (turn.role === 'user') {
+                    const textPart = turn.parts.find(p => p.text)?.text;
+                    const imagePart = turn.parts.find(p => p.inline_data);
+                    markdownContent += `**USER:**\n`;
+                    if (textPart) markdownContent += `${textPart}\n`;
+                    if (imagePart) markdownContent += `[Image Attached]\n`;
+                } else if (turn.role === 'model') {
+                    const textPart = turn.parts.find(p => p.text)?.text;
+                    const imagePart = turn.parts.find(p => p.inline_data);
+                    markdownContent += `**ASTRANOVA:**\n`;
+                    if (textPart) markdownContent += `${textPart}\n`;
+                    if (imagePart) markdownContent += `[Generated Image]\n`;
+                }
+                markdownContent += `\n---\n\n`;
+            });
+            const blob = new Blob([markdownContent], { type: 'text/markdown;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${title.replace(/ /g, '_')}.md`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        };
+
+        const clearAllChats = () => {
+            showConfirmation(
+                'Clear All Conversations?',
+                'This will permanently delete your entire chat history. This action cannot be undone.',
+                () => {
+                    localStorage.removeItem('astraNovaChats');
+                    startNewChat();
+                    DOMElements.closeSettingsBtn.click();
+                    hideConfirmation();
+                }
+            );
+        };
+
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition;
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.lang = 'en-US';
+            recognition.interimResults = false;
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[event.results.length - 1][0].transcript.trim();
+                DOMElements.chatInput.value = transcript;
+                autoResizeTextarea();
+                stopListening();
+            };
+            recognition.onerror = (event) => {
+                console.error("Speech recognition error:", event.error);
+                stopListening();
+            };
+            recognition.onend = () => {
+                if (state.isListening) {
+                    stopListening();
+                }
+            };
+        }
+
+        const startListening = () => {
+            if (state.isListening || !recognition) return;
+            state.isListening = true;
+            DOMElements.voiceInputBtn.classList.add('listening');
+            DOMElements.voiceInputBtn.style.color = 'var(--accent-primary)';
+            recognition.start();
+        };
+
+        const stopListening = () => {
+            if (!state.isListening || !recognition) return;
+            state.isListening = false;
+            DOMElements.voiceInputBtn.classList.remove('listening');
+            DOMElements.voiceInputBtn.style.color = 'var(--text-muted)';
+            recognition.stop();
+        };
+
+        const handleVoiceInput = () => {
+            if (!SpeechRecognition) {
+                alert("Sorry, your browser does not support voice recognition.");
+                return;
+            }
+            if (state.isListening) {
+                stopListening();
+            } else {
+                startListening();
+            }
+        };
+        
+        const synth = window.speechSynthesis;
+        let speechQueue = [];
+        let isSpeaking = false;
+
+        const processSpeechQueue = () => {
+            if (isSpeaking || speechQueue.length === 0) {
+                return;
+            }
+            isSpeaking = true;
+            const utterance = speechQueue.shift();
+            utterance.onend = () => {
+                isSpeaking = false;
+                processSpeechQueue();
+            };
+            synth.speak(utterance);
+        };
+        
+        const playSpeech = (text) => {
+            if (!text) return;
+            stopSpeech(); 
+            const cleanText = text.replace(/https?:\/\/[^\s]+/g, 'link').replace(/\[CODE:.*?\][\s\S]*?\[\/CODE\]/g, 'Code block.').replace(/`/g, '');
+            const utterance = new SpeechSynthesisUtterance(cleanText);
+            const selectedVoiceName = DOMElements.voiceSelector.value;
+            const selectedVoice = availableVoices.find(voice => voice.name === selectedVoiceName);
+            if (selectedVoice) {
+                utterance.voice = selectedVoice;
+            }
+            speechQueue.push(utterance);
+            processSpeechQueue();
+        };
+
+        const speakTextAutomatically = (text) => {
+            if (!state.isSpeechEnabled) return;
+            playSpeech(text);
+        };
+
+        const stopSpeech = () => {
+            speechQueue = [];
+            synth.cancel();
+            isSpeaking = false;
+        };
+
+        // --- Core Logic Functions ---
+        async function generateTitle(firstMessage) { try { const response = await fetch(`${config.backendUrl}/generate-title`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: firstMessage }) }); if (!response.ok) return 'New Chat'; return (await response.json()).title || 'New Chat'; } catch (error) { return 'New Chat'; } }
+        async function handleFormSubmit() { stopSpeech(); const messageText = DOMElements.chatInput.value.trim(); if ((!messageText && !state.attachedImageB64) || state.isSubmitting) return; const userMessageIndex = state.chatHistory.length; addUserMessage(messageText, state.attachedImageB64, userMessageIndex); if (state.selectedModel === 'docs') { await handleDocumentGeneration(messageText); return; } setSubmitting(true); const userTurn = { role: 'user', parts: [] }; if (messageText) userTurn.parts.push({ text: messageText }); if (state.attachedImageB64) { const [meta, data] = state.attachedImageB64.split(','); userTurn.parts.push({ inline_data: { mime_type: meta.match(/:(.*?);/)[1], data: data } }); } state.chatHistory.push(userTurn); DOMElements.chatInput.value = ''; autoResizeTextarea(); removeAttachedImage(); try { if (state.selectedModel === 'image') { await handleImageGeneration(messageText); } else { await handleStreamingRequest('/chat-stream', { history: state.chatHistory, customInstruction: state.customInstruction }); } } catch (error) { if (error.name === 'AbortError') { const lastBubbleContent = DOMElements.chatWindow.querySelector('.model-bubble:last-child .markdown-content'); if (lastBubbleContent) lastBubbleContent.innerHTML += `<p class="text-yellow-400 text-sm mt-2">Stream terminated by observer.</p>`; } else { addModelResponseMessage({ type: 'text', data: `<div class="text-red-400"><strong>System Alert:</strong> ${escapeHtml(error.message)}</div>` }, state.chatHistory.length); state.chatHistory.pop(); } } finally { setSubmitting(false); updateUIForCurrentChat(); } }
+        async function handleStreamingRequest(endpoint, body) { const isFirstChatTurn = state.chatHistory.length === 1 && endpoint === '/chat-stream'; state.abortController = new AbortController(); const modelMessageIndex = state.chatHistory.length; const responseElements = addAstraMessageBubble(modelMessageIndex); const response = await fetch(`${config.backendUrl}${endpoint}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: state.abortController.signal }); if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || `Quantum link unstable (Status: ${response.status})`); const reader = response.body.getReader(); const decoder = new TextDecoder(); let fullResponseText = ""; let sentenceBuffer = ""; while (true) { const { value, done } = await reader.read(); if (done) break; const chunk = decoder.decode(value, { stream: true }); fullResponseText += chunk; sentenceBuffer += chunk; let lastPunctuationIndex = -1; for (let i = sentenceBuffer.length - 1; i >= 0; i--) { if ('.?!'.includes(sentenceBuffer[i])) { lastPunctuationIndex = i; break; } } if (lastPunctuationIndex !== -1) { const sentence = sentenceBuffer.substring(0, lastPunctuationIndex + 1); speakTextAutomatically(sentence); sentenceBuffer = sentenceBuffer.substring(lastPunctuationIndex + 1); } responseElements.content.innerHTML = marked.parse(fullResponseText.replace(/\[CODE:(\w+)\]([\s\S]*?)\[\/CODE\]/g, (match, lang, code) => `\n<pre><code class="language-${lang}">${escapeHtml(code)}</code></pre>\n`)); responseElements.content.querySelectorAll('a').forEach(link => link.target = '_blank'); scrollToBottom(); } if (sentenceBuffer.trim()) { speakTextAutomatically(sentenceBuffer); } responseElements.content.querySelectorAll('pre code').forEach(block => { if(block.innerText) { hljs.highlightElement(block); addCopyButton(block.parentElement); } }); if (endpoint === '/chat-stream') { state.chatHistory.push({ role: 'model', parts: [{ text: fullResponseText }] }); await saveCurrentChat(isFirstChatTurn ? await generateTitle(state.chatHistory[0].parts.find(p => p.text)?.text || "Image Analysis") : undefined); } addModelResponseMessage({ type: 'text', data: marked.parse(fullResponseText), fullText: fullResponseText }, modelMessageIndex); responseElements.container.remove(); }
+        async function handleImageGeneration(prompt) { const modelMessageIndex = state.chatHistory.length; const elements = addAstraMessageBubble(modelMessageIndex); const response = await fetch(`${config.backendUrl}/generate-image`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt }) }); elements.container.remove(); if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || `Stellar forge unstable (Status: ${response.status})`); const data = await response.json(); addModelResponseMessage({ type: 'image', data: `data:image/png;base64,${data.image_b64}` }, modelMessageIndex); state.chatHistory.push({ role: 'model', parts: [{ inline_data: { mime_type: 'image/png', data: data.image_b64 } }] }); await saveCurrentChat(state.chatHistory.length === 2 ? await generateTitle(prompt || "Image Generation") : undefined); }
+        async function handleDocumentGeneration(prompt) { setSubmitting(true); try { const response = await fetch(`${config.backendUrl}/generate-doc`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: prompt, docType: state.docType, length: state.docLength }) }); if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.error || 'Failed to generate document.'); } const data = await response.json(); const userTurn = { role: 'user', parts: [{ text: prompt }] }; const modelTurn = { role: 'model', parts: [{ doc_data: data }] }; state.chatHistory.push(userTurn, modelTurn); addModelResponseMessage({ type: 'doc', data: data }, state.chatHistory.length - 1); DOMElements.chatInput.value = ''; autoResizeTextarea(); await saveCurrentChat(await generateTitle(`Document about ${prompt}`)); } catch (error) { console.error("Document generation error:", error); addModelResponseMessage({ type: 'text', data: `<div class="text-red-400"><strong>System Alert:</strong> ${escapeHtml(error.message)}</div>` }, state.chatHistory.length); } finally { setSubmitting(false); } }
+        function updateUIForCurrentChat() { const chats = getSavedChats(); const title = state.currentChatId ? chats[state.currentChatId]?.title : 'New Chat'; DOMElements.chatTitle.textContent = title; DOMElements.chatTitle.title = title; DOMElements.summarizeBtn.classList.toggle('hidden', state.chatHistory.length < 2 && state.selectedModel === 'chat'); renderRecentChats(); }
+        function renderRecentChats() { const chats = getSavedChats(); const sortedChatIds = Object.keys(chats).sort((a, b) => { const chatA = chats[a]; const chatB = chats[b]; if (chatA.isPinned && !chatB.isPinned) return -1; if (!chatA.isPinned && chatB.isPinned) return 1; return (chatB.timestamp || 0) - (chatA.timestamp || 0); }); DOMElements.recentChatsList.innerHTML = sortedChatIds.length === 0 ? `<p class="p-2 text-sm recents-heading">No recent conversations.</p>` : ''; sortedChatIds.forEach(chatId => { const chat = chats[chatId]; const item = document.createElement('a'); item.href = '#'; item.className = `recent-chat-item flex items-center justify-between p-2 rounded-lg transition-colors text-sm ${chatId === state.currentChatId ? 'active-chat' : ''}`; item.dataset.chatId = chatId; const pinIcon = chat.isPinned ? `<i data-lucide="pin" class="w-4 h-4" fill="currentColor"></i>` : `<i data-lucide="pin" class="w-4 h-4"></i>`; item.innerHTML = `<span class="truncate" title="${escapeHtml(chat.title)}">${escapeHtml(chat.title)}</span><div class="chat-actions items-center space-x-1"><button class="pin-btn p-1 ${chat.isPinned ? 'pinned' : ''}" style="color: var(--text-muted);">${pinIcon}</button><button class="delete-btn p-1" style="color: var(--text-muted);"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>`; item.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); if (e.target.closest('.delete-btn')) { deleteChat(chatId); } else if (e.target.closest('.pin-btn')) { togglePinChat(chatId); } else { loadChat(chatId); } }); DOMElements.recentChatsList.appendChild(item); }); lucide.createIcons(); }
+        function loadChat(chatId) { const chat = getSavedChats()[chatId]; if (!chat) return; stopSpeech(); state.currentChatId = chatId; state.chatHistory = chat.history; state.customInstruction = chat.customInstruction || ''; DOMElements.customInstructionInput.value = state.customInstruction; updateUIForModel(chat.model || 'chat'); DOMElements.chatWindow.innerHTML = ''; chat.history.forEach((turn, index) => { const textPart = turn.parts.find(p => p.text)?.text || ''; const imagePartData = turn.parts.find(p => p.inline_data)?.inline_data; const docPartData = turn.parts.find(p => p.doc_data)?.doc_data; if (turn.role === 'user') { addUserMessage(textPart, imagePartData ? `data:${imagePartData.mime_type};base64,${imagePartData.data}` : null, index); } else if (turn.role === 'model') { if (imagePartData) addModelResponseMessage({ type: 'image', data: `data:${imagePartData.mime_type};base64,${imagePartData.data}` }, index); else if (docPartData) addModelResponseMessage({ type: 'doc', data: docPartData }, index); else if (textPart) addModelResponseMessage({ type: 'text', data: marked.parse(textPart), fullText: textPart }, index); } }); updateUIForCurrentChat(); if (window.innerWidth < 768) applySidebarState(true); }
+        function deleteChat(chatId) { showConfirmation( 'Delete Conversation?', 'This will permanently delete this chat.', () => { const chats = getSavedChats(); delete chats[chatId]; saveChats(chats); if (state.currentChatId === chatId) startNewChat(); else renderRecentChats(); hideConfirmation(); } ); }
+        
+        const togglePinChat = (chatId) => {
+            const chats = getSavedChats();
+            if (chats[chatId]) {
+                chats[chatId].isPinned = !chats[chatId].isPinned;
+                saveChats(chats);
+                renderRecentChats();
+            }
+        };
+
+        async function saveCurrentChat(title) {
+            if (!state.currentChatId) {
+                state.currentChatId = `chat-${crypto.randomUUID()}`;
+            }
+            const chats = getSavedChats();
+            const existingChat = chats[state.currentChatId] || {};
+            chats[state.currentChatId] = {
+                ...existingChat,
+                title: title || existingChat.title || 'New Chat',
+                history: state.chatHistory,
+                timestamp: Date.now(),
+                customInstruction: state.customInstruction,
+                model: state.selectedModel
+            };
+            
+            try {
+                saveChats(chats);
+            } catch (e) {
+                if (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
+                    console.warn("Storage quota exceeded. Pruning oldest chats.");
+                    const sortedChatIds = Object.keys(chats).sort((a, b) => (chats[a].timestamp || 0) - (chats[b].timestamp || 0));
+                    let saveSuccessful = false;
+                    while (sortedChatIds.length > 1) {
+                        const oldestChatId = sortedChatIds.shift();
+                        delete chats[oldestChatId];
+                        try {
+                            saveChats(chats);
+                            saveSuccessful = true;
+                            break; 
+                        } catch (e2) {}
+                    }
+                    if (!saveSuccessful) console.error("Failed to save chat even after pruning.");
+                } else {
+                    console.error("Failed to save chat:", e);
+                }
+            }
+            updateUIForCurrentChat();
+        }
+
+        function startNewChat() { stopSpeech(); state.currentChatId = null; state.chatHistory = []; state.customInstruction = ''; DOMElements.customInstructionInput.value = ''; removeAttachedImage(); updateUIForModel(state.selectedModel); const msg = state.selectedModel === 'chat' ? 'Salutations... A new communication channel is open.' : state.selectedModel === 'image' ? 'The stellar forge is active. Describe the cosmos you wish to render.' : 'The document forge is ready. Describe the document you wish to create.'; DOMElements.chatWindow.innerHTML = `<div class="flex items-start gap-3 mb-6 message-pop-in"><img src="${config.defaultAvatar}" class="w-10 h-10 rounded-xl"><div class="model-bubble p-4 rounded-2xl rounded-bl-lg w-full"><p class="font-semibold mb-2">AstraNova</p><p>${msg}</p></div></div>`; updateUIForCurrentChat(); if (window.innerWidth < 768) applySidebarState(true); }
+        
+        function updateUIForModel(model) {
+            state.selectedModel = model;
+            DOMElements.modelDropdown.style.display = 'none';
+            
+            const modelConfig = {
+                chat: { name: 'AstraNova Pro', icon: 'message-circle', placeholder: 'Interface with AstraNova...' },
+                image: { name: 'AstraNova Imaging', icon: 'image', placeholder: 'Describe an image to generate...' },
+                docs: { name: 'AstraNova Docs', icon: 'file-text', placeholder: 'Describe the document you want to create...' }
+            };
+
+            const config = modelConfig[model] || modelConfig.chat;
+            DOMElements.modelName.textContent = config.name;
+            DOMElements.modelIconContainer.innerHTML = `<i data-lucide="${config.icon}" class="w-5 h-5"></i>`;
+            DOMElements.chatInput.placeholder = config.placeholder;
+
+            DOMElements.attachBtn.classList.toggle('hidden', model !== 'chat');
+            DOMElements.voiceInputBtn.classList.toggle('hidden', model === 'docs');
+            DOMElements.docOptionsContainer.classList.toggle('hidden', model !== 'docs');
+            DOMElements.summarizeBtn.classList.toggle('hidden', state.chatHistory.length < 2 || model !== 'chat');
+            
+            if (model !== 'chat') removeAttachedImage();
+            lucide.createIcons();
+        }
+
+        async function handleAIThemeGeneration(prompt, applyDirectly = false) {
+            const btn = DOMElements.generateThemeBtn;
+            btn.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 text-white animate-spin"></i>';
+            lucide.createIcons();
+            btn.disabled = true;
+
+            try {
+                const response = await fetch(`${config.backendUrl}/generate-theme`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt }),
+                });
+                if (!response.ok) throw new Error('Failed to generate theme image.');
+                const data = await response.json();
+                const imageUrl = `data:image/png;base64,${data.image_b64}`;
+                state.aiThemeCache = imageUrl;
+                
+                if(applyDirectly) {
+                    DOMElements.backgroundContainer.style.backgroundImage = `url(${imageUrl})`;
+                    DOMElements.backgroundContainer.style.opacity = localStorage.getItem('astraNovaOpacity') || '0.5';
+                    DOMElements.body.style.backgroundColor = 'transparent';
+                } else {
+                    DOMElements.themePreviewBox.style.backgroundImage = `url(${imageUrl})`;
+                    DOMElements.themePreviewContainer.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error("AI Theme generation error:", error);
+            } finally {
+                btn.innerHTML = '<i data-lucide="wand-2" class="w-5 h-5 text-white"></i>';
+                lucide.createIcons();
+                btn.disabled = false;
+            }
+        }
+        
+        async function handleRegenerate() {
+            if (state.isSubmitting || state.chatHistory.length === 0) return;
+
+            const lastModelTurnIndex = state.chatHistory.findLastIndex(turn => turn.role === 'model');
+            if (lastModelTurnIndex === -1) return;
+
+            const relevantUserTurn = state.chatHistory[lastModelTurnIndex - 1];
+            if (!relevantUserTurn || relevantUserTurn.role !== 'user') return;
+
+            const promptText = relevantUserTurn.parts.find(p => p.text)?.text || '';
+            
+            state.chatHistory.pop();
+            const allMessages = DOMElements.chatWindow.querySelectorAll('[data-message-index]');
+            allMessages[allMessages.length - 1].remove();
+
+            setSubmitting(true);
+            try {
+                if (state.selectedModel === 'image') {
+                    await handleImageGeneration(promptText);
+                } else if (state.selectedModel === 'docs') {
+                    await handleDocumentGeneration(promptText);
+                } else {
+                    await handleStreamingRequest('/chat-stream', { history: state.chatHistory, customInstruction: state.customInstruction });
+                }
+            } catch (error) {
+                console.error("Regeneration failed:", error);
+            } finally {
+                setSubmitting(false);
+            }
+        }
+
+        // --- NEW: Fullscreen Image Viewer Logic ---
+        const showImageFullscreen = (imageUrl) => {
+            DOMElements.fullscreenImage.src = imageUrl;
+            DOMElements.fullscreenDownloadBtn.href = imageUrl;
+            DOMElements.fullscreenImageViewer.style.display = 'flex';
+        };
+        const hideImageFullscreen = () => {
+            DOMElements.fullscreenImageViewer.style.display = 'none';
+            DOMElements.fullscreenImage.src = '';
+        };
+
+        // --- Initialization ---
+        const initialize = () => {
+            applyTheme(localStorage.getItem('astraNovaTheme') || 'dark');
+            
+            const isSidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+            applySidebarState(isSidebarCollapsed);
+            window.addEventListener('resize', () => applySidebarState(DOMElements.sidebar.classList.contains('-translate-x-full')));
+
+            state.isSpeechEnabled = localStorage.getItem('speechEnabled') === 'true';
+            DOMElements.voiceToggle.checked = state.isSpeechEnabled;
+
+            const savedFont = localStorage.getItem('astraNovaFont') || "'Inter', sans-serif";
+            DOMElements.fontSelector.value = savedFont;
+            applyFont(savedFont);
+
+            const savedBackground = localStorage.getItem('astraNovaBackground') || 'none';
+            const savedOpacity = localStorage.getItem('astraNovaOpacity') || '0.5';
+            DOMElements.backgroundSelector.value = savedBackground;
+            DOMElements.opacitySlider.value = savedOpacity;
+            applyBackground(savedBackground, savedOpacity);
+
+            if (synth.onvoiceschanged !== undefined) {
+                synth.onvoiceschanged = populateVoices;
+            }
+            populateVoices();
+
+            DOMElements.chatForm.addEventListener('submit', (e) => { e.preventDefault(); handleFormSubmit(); });
+            DOMElements.chatInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleFormSubmit(); } });
+            DOMElements.chatInput.addEventListener('input', autoResizeTextarea);
+            DOMElements.newChatBtn.addEventListener('click', () => { updateUIForModel('chat'); startNewChat(); });
+            
+            DOMElements.menuBtn.addEventListener('click', toggleSidebar);
+            DOMElements.closeMenuBtn.addEventListener('click', () => applySidebarState(true));
+            DOMElements.sidebarOverlay.addEventListener('click', () => applySidebarState(true));
+
+            DOMElements.modelSelectorBtn.addEventListener('click', () => { DOMElements.modelDropdown.style.display = DOMElements.modelDropdown.style.display === 'block' ? 'none' : 'block'; });
+            document.addEventListener('click', (e) => { if (!DOMElements.modelSelectorBtn.parentElement.contains(e.target)) DOMElements.modelDropdown.style.display = 'none'; });
+            DOMElements.modelDropdown.addEventListener('click', (e) => { const link = e.target.closest('a'); if (link) { e.preventDefault(); updateUIForModel(link.dataset.model); startNewChat(); } });
+            DOMElements.attachBtn.addEventListener('click', () => DOMElements.imageUploadInput.click());
+            DOMElements.imageUploadInput.addEventListener('change', (e) => { const file = e.target.files[0]; if (file) { const reader = new FileReader(); reader.onload = (e) => { state.attachedImageB64 = e.target.result; DOMElements.imagePreview.src = e.target.result; DOMElements.imagePreviewContainer.classList.remove('hidden'); }; reader.readAsDataURL(file); } });
+            DOMElements.removeImageBtn.addEventListener('click', removeAttachedImage);
+            DOMElements.stopGeneratingBtn.addEventListener('click', () => { state.abortController.abort(); stopSpeech(); });
+            DOMElements.summarizeBtn.addEventListener('click', async () => { if (!state.isSubmitting && state.chatHistory.length > 1) { setSubmitting(true); try { await handleStreamingRequest('/summarize', { history: state.chatHistory }); } catch(e){ console.error(e); } finally { setSubmitting(false); } }});
+            
+            DOMElements.settingsBtn.addEventListener('click', () => DOMElements.settingsModal.style.display = 'flex');
+            DOMElements.closeSettingsBtn.addEventListener('click', () => DOMElements.settingsModal.style.display = 'none');
+            DOMElements.settingsModal.addEventListener('click', (e) => { if(e.target === DOMElements.settingsModal) DOMElements.settingsModal.style.display = 'none'; });
+            DOMElements.themeToggle.addEventListener('change', toggleTheme);
+            DOMElements.exportChatBtn.addEventListener('click', exportChat);
+            
+            DOMElements.saveInstructionBtn.addEventListener('click', () => {
+                state.customInstruction = DOMElements.customInstructionInput.value.trim();
+                saveCurrentChat();
+                DOMElements.closeSettingsBtn.click();
+            });
+            
+            DOMElements.clearChatsBtn.addEventListener('click', clearAllChats);
+
+            DOMElements.confirmActionBtn.addEventListener('click', () => {
+                if (typeof confirmCallback === 'function') {
+                    confirmCallback();
+                }
+            });
+            DOMElements.confirmCancelBtn.addEventListener('click', hideConfirmation);
+            DOMElements.confirmationModal.addEventListener('click', (e) => { if(e.target === DOMElements.confirmationModal) hideConfirmation(); });
+
+            DOMElements.voiceInputBtn.addEventListener('click', handleVoiceInput);
+
+            DOMElements.voiceToggle.addEventListener('change', () => {
+                state.isSpeechEnabled = DOMElements.voiceToggle.checked;
+                localStorage.setItem('speechEnabled', state.isSpeechEnabled);
+                if (!state.isSpeechEnabled) {
+                    stopSpeech();
+                }
+            });
+            
+            DOMElements.fontSelector.addEventListener('change', (e) => {
+                applyFont(e.target.value);
+                localStorage.setItem('astraNovaFont', e.target.value);
+            });
+
+            DOMElements.voiceSelector.addEventListener('change', (e) => {
+                localStorage.setItem('astraNovaVoice', e.target.value);
+            });
+            
+            DOMElements.voicePreviewBtn.addEventListener('click', () => playSpeech("Hello, I am AstraNova."));
+
+            DOMElements.backgroundSelector.addEventListener('change', (e) => {
+                const theme = e.target.value;
+                const opacity = DOMElements.opacitySlider.value;
+                applyBackground(theme, opacity);
+                localStorage.setItem('astraNovaBackground', theme);
+                localStorage.removeItem('astraNovaAIThemePrompt'); 
+                localStorage.removeItem('astraNovaAIThemeURL'); 
+            });
+
+            DOMElements.opacitySlider.addEventListener('input', (e) => {
+                const theme = localStorage.getItem('astraNovaBackground') || 'none';
+                const opacity = e.target.value;
+                applyBackground(theme, opacity);
+                localStorage.setItem('astraNovaOpacity', opacity);
+            });
+
+            DOMElements.generateThemeBtn.addEventListener('click', () => {
+                const prompt = DOMElements.themePromptInput.value.trim();
+                if (prompt) {
+                    handleAIThemeGeneration(prompt);
+                }
+            });
+
+            DOMElements.regenerateThemeBtn.addEventListener('click', () => {
+                const prompt = DOMElements.themePromptInput.value.trim();
+                if (prompt) {
+                    handleAIThemeGeneration(prompt);
+                }
+            });
+
+            DOMElements.applyThemeBtn.addEventListener('click', () => {
+                if (state.aiThemeCache) {
+                    const opacity = DOMElements.opacitySlider.value;
+                    DOMElements.backgroundContainer.style.backgroundImage = `url(${state.aiThemeCache})`;
+                    DOMElements.backgroundContainer.style.opacity = opacity;
+                    DOMElements.body.style.backgroundColor = 'transparent';
+                    DOMElements.backgroundSelector.value = 'none'; 
+                    localStorage.setItem('astraNovaBackground', 'ai');
+                    localStorage.setItem('astraNovaAIThemeURL', state.aiThemeCache);
+                    localStorage.setItem('astraNovaOpacity', opacity);
+                    DOMElements.closeSettingsBtn.click();
+                }
+            });
+
+            DOMElements.docTypeGroup.addEventListener('click', (e) => {
+                if (e.target.tagName === 'BUTTON') {
+                    state.docType = e.target.dataset.docType;
+                    DOMElements.docTypeGroup.querySelectorAll('button').forEach(btn => btn.classList.remove('active'));
+                    e.target.classList.add('active');
+                }
+            });
+
+            DOMElements.docLengthGroup.addEventListener('click', (e) => {
+                if (e.target.tagName === 'BUTTON') {
+                    state.docLength = e.target.dataset.docLength;
+                    DOMElements.docLengthGroup.querySelectorAll('button').forEach(btn => btn.classList.remove('active'));
+                    e.target.classList.add('active');
+                }
+            });
+
+            DOMElements.fullscreenCloseBtn.addEventListener('click', hideImageFullscreen);
+            DOMElements.fullscreenImageViewer.addEventListener('click', (e) => {
+                if(e.target === DOMElements.fullscreenImageViewer) {
+                    hideImageFullscreen();
+                }
+            });
+
+            const chats = getSavedChats();
+            const lastChatId = Object.keys(chats).sort((a, b) => (chats[b].timestamp || 0) - (chats[a].timestamp || 0))[0];
+            if (lastChatId) {
+                loadChat(lastChatId);
+            } else {
+                updateUIForModel('chat');
+                startNewChat();
+            }
+            lucide.createIcons();
+        };
+        initialize();
+    </script>
+</body>
+</html>
