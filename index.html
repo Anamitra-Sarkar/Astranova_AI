@@ -86,7 +86,8 @@
         .user-bubble { background: var(--user-bubble-bg); color: white; }
         .model-bubble { background-color: var(--model-bubble-bg); color: var(--text-primary); }
         .recent-chat-item.active-chat { background-color: var(--bg-tertiary); }
-        .markdown-content pre { background-color: var(--code-bg); border: 1px solid var(--border-color); }
+        .markdown-content pre { background-color: var(--code-bg); border: 1px solid var(--border-color); position: relative; padding-top: 2.5rem; }
+        .markdown-content pre .copy-code-btn { position: absolute; top: 0.5rem; right: 0.5rem; color: var(--text-muted); background: none; border: none; cursor: pointer; }
         .markdown-content code:not(pre code) { background-color: var(--bg-tertiary); padding: 0.2rem 0.4rem; border-radius: 0.25rem; font-size: 0.9em; }
         .markdown-content a {
             color: var(--accent-primary);
@@ -213,7 +214,7 @@
         <!-- Main content area -->
         <main id="main-content" class="flex-1 flex flex-col" style="background-color: transparent;">
             <header class="main-header glass-effect flex items-center justify-between p-2 md:p-4">
-                 <div class="flex items-center flex-1 min-w-0">
+                <div class="flex items-center flex-1 min-w-0">
                     <button id="menu-btn" class="mr-2 p-2 rounded-full" onmouseover="this.style.backgroundColor='var(--bg-tertiary)';" onmouseout="this.style.backgroundColor='transparent';"><i data-lucide="menu" class="w-6 h-6"></i></button>
                     <div class="relative">
                         <button id="model-selector-btn" class="flex items-center space-x-2 px-3 py-2 rounded-lg" style="background-color: var(--bg-tertiary); border: 1px solid var(--border-color);" onmouseover="this.style.backgroundColor='var(--bg-input)';" onmouseout="this.style.backgroundColor='var(--bg-tertiary)';">
@@ -350,10 +351,10 @@
                      <label for="custom-instruction-input" class="block text-sm font-medium" style="color: var(--text-secondary);">Generate AI Theme</label>
                      <p class="text-xs mt-1 mb-2" style="color: var(--text-muted);">Describe a background you'd like to create.</p>
                      <div class="flex items-center space-x-2">
-                        <input id="theme-prompt-input" class="chat-input w-full rounded-lg p-2" style="border: 1px solid var(--border-color);" placeholder="e.g., a futuristic city at night">
-                        <button id="generate-theme-btn" class="p-2 rounded-lg" style="background-color: var(--accent-primary);">
-                            <i data-lucide="wand-2" class="w-5 h-5 text-white"></i>
-                        </button>
+                         <input id="theme-prompt-input" class="chat-input w-full rounded-lg p-2" style="border: 1px solid var(--border-color);" placeholder="e.g., a futuristic city at night">
+                         <button id="generate-theme-btn" class="p-2 rounded-lg" style="background-color: var(--accent-primary);">
+                             <i data-lucide="wand-2" class="w-5 h-5 text-white"></i>
+                         </button>
                      </div>
                      <div id="theme-preview-container" class="hidden mt-2">
                          <div id="theme-preview-box" class="w-full h-32 rounded-lg bg-cover bg-center"></div>
@@ -385,9 +386,9 @@
                 <div class="py-2 border-t" style="border-color: var(--border-color);">
                     <span class="font-medium" style="color: var(--danger-color);">Danger Zone</span>
                      <button id="clear-chats-btn" class="mt-2 flex items-center space-x-2 px-3 py-1.5 rounded-lg text-sm w-full" style="color: var(--danger-color);" onmouseover="this.style.backgroundColor='var(--bg-tertiary)';" onmouseout="this.style.backgroundColor='transparent';">
-                        <i data-lucide="trash-2" class="w-4 h-4"></i>
-                        <span>Clear All Conversations</span>
-                    </button>
+                         <i data-lucide="trash-2" class="w-4 h-4"></i>
+                         <span>Clear All Conversations</span>
+                     </button>
                 </div>
             </div>
         </div>
@@ -675,10 +676,10 @@
                     <span>Download ${content.data.filename}</span>
                 </a>` : '';
 
-            const innerHTML = content.type === 'image'
-                ? `<p class="font-semibold mb-2">Stellar Forge Output</p>${imageHTML}${actionButtonsHTML}`
-                : content.type === 'doc'
-                ? `<p class="font-semibold mb-2">Document Forge Output</p><p>Your document is ready.</p>${downloadButtonHTML}`
+            const innerHTML = content.type === 'image' 
+                ? `<p class="font-semibold mb-2">Stellar Forge Output</p>${imageHTML}${actionButtonsHTML}` 
+                : content.type === 'doc' 
+                ? `<p class="font-semibold mb-2">Document Forge Output</p><p>Your document is ready.</p>${downloadButtonHTML}` 
                 : `<div class="relative"><p class="font-semibold mb-2">AstraNova</p>${actionButtonsHTML}<div class="markdown-content space-y-3">${content.data}</div></div>`;
             
             const messageHTML = `<div id="${messageId}" class="flex items-start gap-3 mb-6 message-pop-in" data-message-index="${index}"><img src="${config.defaultAvatar}" class="w-10 h-10 rounded-xl flex-shrink-0"><div class="model-bubble p-4 rounded-2xl rounded-bl-lg shadow-md w-full max-w-xl">${innerHTML}</div></div>`;
@@ -852,7 +853,92 @@
         // --- Core Logic Functions ---
         async function generateTitle(firstMessage) { try { const response = await fetch(`${config.backendUrl}/generate-title`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: firstMessage }) }); if (!response.ok) return 'New Chat'; return (await response.json()).title || 'New Chat'; } catch (error) { return 'New Chat'; } }
         async function handleFormSubmit() { stopSpeech(); const messageText = DOMElements.chatInput.value.trim(); if ((!messageText && !state.attachedImageB64) || state.isSubmitting) return; const userMessageIndex = state.chatHistory.length; addUserMessage(messageText, state.attachedImageB64, userMessageIndex); if (state.selectedModel === 'docs') { await handleDocumentGeneration(messageText); return; } setSubmitting(true); const userTurn = { role: 'user', parts: [] }; if (messageText) userTurn.parts.push({ text: messageText }); if (state.attachedImageB64) { const [meta, data] = state.attachedImageB64.split(','); userTurn.parts.push({ inline_data: { mime_type: meta.match(/:(.*?);/)[1], data: data } }); } state.chatHistory.push(userTurn); DOMElements.chatInput.value = ''; autoResizeTextarea(); removeAttachedImage(); try { if (state.selectedModel === 'image') { await handleImageGeneration(messageText); } else { await handleStreamingRequest('/chat-stream', { history: state.chatHistory, customInstruction: state.customInstruction }); } } catch (error) { if (error.name === 'AbortError') { const lastBubbleContent = DOMElements.chatWindow.querySelector('.model-bubble:last-child .markdown-content'); if (lastBubbleContent) lastBubbleContent.innerHTML += `<p class="text-yellow-400 text-sm mt-2">Stream terminated by observer.</p>`; } else { addModelResponseMessage({ type: 'text', data: `<div class="text-red-400"><strong>System Alert:</strong> ${escapeHtml(error.message)}</div>` }, state.chatHistory.length); state.chatHistory.pop(); } } finally { setSubmitting(false); updateUIForCurrentChat(); } }
-        async function handleStreamingRequest(endpoint, body) { const isFirstChatTurn = state.chatHistory.length === 1 && endpoint === '/chat-stream'; state.abortController = new AbortController(); const modelMessageIndex = state.chatHistory.length; const responseElements = addAstraMessageBubble(modelMessageIndex); const response = await fetch(`${config.backendUrl}${endpoint}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: state.abortController.signal }); if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || `Quantum link unstable (Status: ${response.status})`); const reader = response.body.getReader(); const decoder = new TextDecoder(); let fullResponseText = ""; let sentenceBuffer = ""; while (true) { const { value, done } = await reader.read(); if (done) break; const chunk = decoder.decode(value, { stream: true }); fullResponseText += chunk; sentenceBuffer += chunk; let lastPunctuationIndex = -1; for (let i = sentenceBuffer.length - 1; i >= 0; i--) { if ('.?!'.includes(sentenceBuffer[i])) { lastPunctuationIndex = i; break; } } if (lastPunctuationIndex !== -1) { const sentence = sentenceBuffer.substring(0, lastPunctuationIndex + 1); speakTextAutomatically(sentence); sentenceBuffer = sentenceBuffer.substring(lastPunctuationIndex + 1); } responseElements.content.innerHTML = marked.parse(fullResponseText.replace(/\[CODE:(\w+)\]([\s\S]*?)\[\/CODE\]/g, (match, lang, code) => `\n<pre><code class="language-${lang}">${escapeHtml(code)}</code></pre>\n`)); responseElements.content.querySelectorAll('a').forEach(link => link.target = '_blank'); scrollToBottom(); } if (sentenceBuffer.trim()) { speakTextAutomatically(sentenceBuffer); } responseElements.content.querySelectorAll('pre code').forEach(block => { if(block.innerText) { hljs.highlightElement(block); addCopyButton(block.parentElement); } }); if (endpoint === '/chat-stream') { state.chatHistory.push({ role: 'model', parts: [{ text: fullResponseText }] }); await saveCurrentChat(isFirstChatTurn ? await generateTitle(state.chatHistory[0].parts.find(p => p.text)?.text || "Image Analysis") : undefined); } addModelResponseMessage({ type: 'text', data: marked.parse(fullResponseText), fullText: fullResponseText }, modelMessageIndex); responseElements.container.remove(); }
+        
+        // ======================= CORRECTED FUNCTION =======================
+        async function handleStreamingRequest(endpoint, body) {
+            const isFirstChatTurn = state.chatHistory.length === 1 && endpoint === '/chat-stream';
+            state.abortController = new AbortController();
+            const modelMessageIndex = state.chatHistory.length;
+            const responseElements = addAstraMessageBubble(modelMessageIndex);
+            const response = await fetch(`${config.backendUrl}${endpoint}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+                signal: state.abortController.signal
+            });
+            if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || `Quantum link unstable (Status: ${response.status})`);
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let fullResponseText = "";
+            let sentenceBuffer = "";
+            while (true) {
+                const { value, done } = await reader.read();
+                if (done) break;
+                const chunk = decoder.decode(value, { stream: true });
+                fullResponseText += chunk;
+                sentenceBuffer += chunk;
+                let lastPunctuationIndex = -1;
+                for (let i = sentenceBuffer.length - 1; i >= 0; i--) {
+                    if ('.?!'.includes(sentenceBuffer[i])) {
+                        lastPunctuationIndex = i;
+                        break;
+                    }
+                }
+                if (lastPunctuationIndex !== -1) {
+                    const sentence = sentenceBuffer.substring(0, lastPunctuationIndex + 1);
+                    speakTextAutomatically(sentence);
+                    sentenceBuffer = sentenceBuffer.substring(lastPunctuationIndex + 1);
+                }
+                responseElements.content.innerHTML = marked.parse(fullResponseText.replace(/\[CODE:(\w+)\]([\s\S]*?)\[\/CODE\]/g, (match, lang, code) => `\n<pre><code class="language-${lang}">${escapeHtml(code)}</code></pre>\n`));
+                responseElements.content.querySelectorAll('a').forEach(link => link.target = '_blank');
+                scrollToBottom();
+            }
+            if (sentenceBuffer.trim()) {
+                speakTextAutomatically(sentenceBuffer);
+            }
+            responseElements.content.querySelectorAll('pre code').forEach(block => {
+                if (block.innerText) {
+                    hljs.highlightElement(block);
+                    addCopyButton(block.parentElement);
+                }
+            });
+            if (endpoint === '/chat-stream') {
+                state.chatHistory.push({
+                    role: 'model',
+                    parts: [{
+                        text: fullResponseText
+                    }]
+                });
+                await saveCurrentChat(isFirstChatTurn ? await generateTitle(state.chatHistory[0].parts.find(p => p.text) ?.text || "Image Analysis") : undefined);
+            }
+
+            // --- FIX STARTS HERE ---
+            // Get the bubble div that the text was streamed into.
+            const modelBubble = responseElements.container.querySelector('.model-bubble');
+            
+            // Make the bubble a 'relative' container for positioning the buttons.
+            modelBubble.classList.add('relative');
+
+            // Define the action buttons.
+            const actionButtonsHTML = `
+                <div class="absolute top-2 right-2 flex items-center">
+                    <button onclick="playSpeech(\`${escapeBackticks(fullResponseText)}\`)" class="p-1 rounded-full" style="color: var(--text-muted);" onmouseover="this.style.backgroundColor='var(--bg-tertiary)';" onmouseout="this.style.backgroundColor='transparent';">
+                        <i data-lucide="volume-2" class="w-4 h-4"></i>
+                    </button>
+                    <button onclick="handleRegenerate()" class="p-1 rounded-full" style="color: var(--text-muted);" onmouseover="this.style.backgroundColor='var(--bg-tertiary)';" onmouseout="this.style.backgroundColor='transparent';">
+                        <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                    </button>
+                </div>`;
+            
+            // Add the action buttons to the existing bubble.
+            modelBubble.insertAdjacentHTML('beforeend', actionButtonsHTML);
+
+            // Render the new icons for the buttons.
+            lucide.createIcons();
+            // --- FIX ENDS HERE ---
+        }
+        // =================================================================
+
         async function handleImageGeneration(prompt) { const modelMessageIndex = state.chatHistory.length; const elements = addAstraMessageBubble(modelMessageIndex); const response = await fetch(`${config.backendUrl}/generate-image`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt }) }); elements.container.remove(); if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || `Stellar forge unstable (Status: ${response.status})`); const data = await response.json(); addModelResponseMessage({ type: 'image', data: `data:image/png;base64,${data.image_b64}` }, modelMessageIndex); state.chatHistory.push({ role: 'model', parts: [{ inline_data: { mime_type: 'image/png', data: data.image_b64 } }] }); await saveCurrentChat(state.chatHistory.length === 2 ? await generateTitle(prompt || "Image Generation") : undefined); }
         async function handleDocumentGeneration(prompt) { setSubmitting(true); try { const response = await fetch(`${config.backendUrl}/generate-doc`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: prompt, docType: state.docType, length: state.docLength }) }); if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.error || 'Failed to generate document.'); } const data = await response.json(); const userTurn = { role: 'user', parts: [{ text: prompt }] }; const modelTurn = { role: 'model', parts: [{ doc_data: data }] }; state.chatHistory.push(userTurn, modelTurn); addModelResponseMessage({ type: 'doc', data: data }, state.chatHistory.length - 1); DOMElements.chatInput.value = ''; autoResizeTextarea(); await saveCurrentChat(await generateTitle(`Document about ${prompt}`)); } catch (error) { console.error("Document generation error:", error); addModelResponseMessage({ type: 'text', data: `<div class="text-red-400"><strong>System Alert:</strong> ${escapeHtml(error.message)}</div>` }, state.chatHistory.length); } finally { setSubmitting(false); } }
         function updateUIForCurrentChat() { const chats = getSavedChats(); const title = state.currentChatId ? chats[state.currentChatId]?.title : 'New Chat'; DOMElements.chatTitle.textContent = title; DOMElements.chatTitle.title = title; DOMElements.summarizeBtn.classList.toggle('hidden', state.chatHistory.length < 2 && state.selectedModel === 'chat'); renderRecentChats(); }
