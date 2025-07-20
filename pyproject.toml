@@ -8,7 +8,7 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = ">=3.11"
 
-# Merged dependencies from both sections
+# Corrected and merged dependencies
 flask = "^3.0.0"
 fla = "^3.1.1"
 flask-cors = "^4.0.1"
@@ -19,7 +19,6 @@ werkzeug = "^3.0.3"
 requests = "^2.32.3"
 fpdf = "^1.7.2"
 python-pptx = "^0.6.23"
-
 
 [build-system]
 requires = ["poetry-core"]
