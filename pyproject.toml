@@ -4,8 +4,7 @@ version = "0.1.0"
 description = "My Astranova AI Chat App"
 authors = ["Anamitra Sarkar <your.email@example.com>"]
 readme = "README.md"
-# Add this line to tell Poetry this is not a package to be installed
-package-mode = false
+packages = [{ include = "main.py" }]
 
 [tool.poetry.dependencies]
 python = ">=3.11"
