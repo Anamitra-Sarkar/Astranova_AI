@@ -1,23 +1,27 @@
 <!DOCTYPE html>
-<html lang="en"> <!-- Default to dark, JS will handle theme switching -->
+<!-- The lang attribute is useful for accessibility -->
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AstraNova AI</title>
     
+    <!-- External Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:wght@400;500;600&family=Roboto+Mono:wght@400;500&family=Playfair+Display:wght@400;500;600&family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
-    <link rel="icon" href="/image.png" type="image/png">
+    
+    <!-- CORRECTED: Favicon link using url_for -->
+    <link rel="icon" href="{{ url_for('static', filename='image.png') }}" type="image/png">
 
     <!-- Libraries for Markdown and Code Highlighting -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css" id="hljs-theme">
 
-    <!-- --- Enhanced Styling and Theme Variables --- -->
+    <!-- Internal Styles (No changes needed here) -->
     <style>
         :root {
             --bg-primary: #111827;
@@ -61,8 +65,8 @@
             --model-bubble-bg: #e5e7eb;
             --code-bg: #f3f4f6;
         }
-
-        body { 
+        /* ... rest of your styles are fine ... */
+        body {  
             font-family: var(--font-family); 
             background-color: var(--bg-primary);
             color: var(--text-primary);
@@ -170,7 +174,6 @@
             transition: opacity 0.5s ease-in-out, background-image 0.5s ease-in-out;
         }
         
-        /* --- NEW: Fullscreen Image Viewer Styles --- */
         #fullscreen-image-viewer {
             background-color: rgba(0, 0, 0, 0.8);
             backdrop-filter: blur(8px);
@@ -190,7 +193,8 @@
         <!-- Sidebar -->
         <aside id="sidebar" class="sidebar glass-effect w-64 p-4 flex-col flex fixed h-full z-40 transition-transform duration-300 ease-in-out">
             <button id="close-menu-btn" class="md:hidden absolute top-2 right-2 p-2 rounded-full hover:bg-gray-700/50"><i data-lucide="x" class="w-6 h-6"></i></button>
-            <div class="flex items-center mb-6 mt-8 md:mt-0"><img src="/image.png" alt="AstraNova Logo" class="w-8 h-8 rounded-lg mr-3"><h1 class="text-xl font-bold">AstraNova</h1></div>
+            <!-- CORRECTED: Sidebar logo link -->
+            <div class="flex items-center mb-6 mt-8 md:mt-0"><img src="{{ url_for('static', filename='image.png') }}" alt="AstraNova Logo" class="w-8 h-8 rounded-lg mr-3"><h1 class="text-xl font-bold">AstraNova</h1></div>
             <button id="new-chat-btn" class="new-chat-btn flex items-center justify-center w-full text-white font-semibold py-2.5 px-4 rounded-lg">
                 <i data-lucide="plus" class="w-5 h-5 mr-2"></i>New Chat
             </button>
@@ -213,6 +217,7 @@
 
         <!-- Main content area -->
         <main id="main-content" class="flex-1 flex flex-col" style="background-color: transparent;">
+            <!-- (The rest of your main content is fine) -->
             <header class="main-header glass-effect flex items-center justify-between p-2 md:p-4">
                 <div class="flex items-center flex-1 min-w-0">
                     <button id="menu-btn" class="mr-2 p-2 rounded-full" onmouseover="this.style.backgroundColor='var(--bg-tertiary)';" onmouseout="this.style.backgroundColor='transparent';"><i data-lucide="menu" class="w-6 h-6"></i></button>
@@ -272,6 +277,7 @@
         </main>
     </div>
 
+    <!-- (Modals are fine, no changes needed) -->
     <!-- Settings Modal -->
     <div id="settings-modal" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
         <div class="modal-content rounded-xl shadow-2xl w-full max-w-2xl p-6 message-pop-in max-h-[90vh] overflow-y-auto">
@@ -411,7 +417,7 @@
         </div>
     </div>
     
-    <!-- --- NEW: Fullscreen Image Viewer --- -->
+    <!-- Fullscreen Image Viewer -->
     <div id="fullscreen-image-viewer" class="fixed inset-0 z-[70] hidden items-center justify-center p-4">
         <div class="absolute top-4 right-4 flex space-x-2">
             <a id="fullscreen-download-btn" href="#" download="astranova-image.png" class="p-2 rounded-full bg-black/50 text-white hover:bg-black/75">
@@ -428,7 +434,8 @@
         // --- Configuration & State ---
         const config = { 
             backendUrl: window.location.origin, 
-            defaultAvatar: "/image.png",
+            // --- CORRECTED: Default avatar path using url_for ---
+            defaultAvatar: "{{ url_for('static', filename='image.png') }}",
             backgrounds: {
                 cars: 'https://www.motortrend.com/uploads/sites/11/2018/12/50-Years-of-IMSA-16.jpg',
                 garden: 'https://d3w13n53foase7.cloudfront.net/medium_keukenhof-the-garden-of-europe-a-flowery-experience-y0rd_image.jpg',
@@ -438,6 +445,7 @@
                 snow: 'https://images.stockcake.com/public/3/1/2/31234741-3165-4925-b068-a0788f4def63_large/snowy-city-street-stockcake.jpg'
             }
         };
+        // (The rest of your JavaScript is fine, no changes needed from here)
         const DOMElements = {
             html: document.documentElement,
             body: document.body,
@@ -854,7 +862,6 @@
         async function generateTitle(firstMessage) { try { const response = await fetch(`${config.backendUrl}/generate-title`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: firstMessage }) }); if (!response.ok) return 'New Chat'; return (await response.json()).title || 'New Chat'; } catch (error) { return 'New Chat'; } }
         async function handleFormSubmit() { stopSpeech(); const messageText = DOMElements.chatInput.value.trim(); if ((!messageText && !state.attachedImageB64) || state.isSubmitting) return; const userMessageIndex = state.chatHistory.length; addUserMessage(messageText, state.attachedImageB64, userMessageIndex); if (state.selectedModel === 'docs') { await handleDocumentGeneration(messageText); return; } setSubmitting(true); const userTurn = { role: 'user', parts: [] }; if (messageText) userTurn.parts.push({ text: messageText }); if (state.attachedImageB64) { const [meta, data] = state.attachedImageB64.split(','); userTurn.parts.push({ inline_data: { mime_type: meta.match(/:(.*?);/)[1], data: data } }); } state.chatHistory.push(userTurn); DOMElements.chatInput.value = ''; autoResizeTextarea(); removeAttachedImage(); try { if (state.selectedModel === 'image') { await handleImageGeneration(messageText); } else { await handleStreamingRequest('/chat-stream', { history: state.chatHistory, customInstruction: state.customInstruction }); } } catch (error) { if (error.name === 'AbortError') { const lastBubbleContent = DOMElements.chatWindow.querySelector('.model-bubble:last-child .markdown-content'); if (lastBubbleContent) lastBubbleContent.innerHTML += `<p class="text-yellow-400 text-sm mt-2">Stream terminated by observer.</p>`; } else { addModelResponseMessage({ type: 'text', data: `<div class="text-red-400"><strong>System Alert:</strong> ${escapeHtml(error.message)}</div>` }, state.chatHistory.length); state.chatHistory.pop(); } } finally { setSubmitting(false); updateUIForCurrentChat(); } }
         
-        // ======================= CORRECTED FUNCTION =======================
         async function handleStreamingRequest(endpoint, body) {
             const isFirstChatTurn = state.chatHistory.length === 1 && endpoint === '/chat-stream';
             state.abortController = new AbortController();
@@ -912,14 +919,10 @@
                 await saveCurrentChat(isFirstChatTurn ? await generateTitle(state.chatHistory[0].parts.find(p => p.text) ?.text || "Image Analysis") : undefined);
             }
 
-            // --- FIX STARTS HERE ---
-            // Get the bubble div that the text was streamed into.
             const modelBubble = responseElements.container.querySelector('.model-bubble');
             
-            // Make the bubble a 'relative' container for positioning the buttons.
             modelBubble.classList.add('relative');
 
-            // Define the action buttons.
             const actionButtonsHTML = `
                 <div class="absolute top-2 right-2 flex items-center">
                     <button onclick="playSpeech(\`${escapeBackticks(fullResponseText)}\`)" class="p-1 rounded-full" style="color: var(--text-muted);" onmouseover="this.style.backgroundColor='var(--bg-tertiary)';" onmouseout="this.style.backgroundColor='transparent';">
@@ -930,14 +933,10 @@
                     </button>
                 </div>`;
             
-            // Add the action buttons to the existing bubble.
             modelBubble.insertAdjacentHTML('beforeend', actionButtonsHTML);
 
-            // Render the new icons for the buttons.
             lucide.createIcons();
-            // --- FIX ENDS HERE ---
         }
-        // =================================================================
 
         async function handleImageGeneration(prompt) { const modelMessageIndex = state.chatHistory.length; const elements = addAstraMessageBubble(modelMessageIndex); const response = await fetch(`${config.backendUrl}/generate-image`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt }) }); elements.container.remove(); if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || `Stellar forge unstable (Status: ${response.status})`); const data = await response.json(); addModelResponseMessage({ type: 'image', data: `data:image/png;base64,${data.image_b64}` }, modelMessageIndex); state.chatHistory.push({ role: 'model', parts: [{ inline_data: { mime_type: 'image/png', data: data.image_b64 } }] }); await saveCurrentChat(state.chatHistory.length === 2 ? await generateTitle(prompt || "Image Generation") : undefined); }
         async function handleDocumentGeneration(prompt) { setSubmitting(true); try { const response = await fetch(`${config.backendUrl}/generate-doc`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: prompt, docType: state.docType, length: state.docLength }) }); if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.error || 'Failed to generate document.'); } const data = await response.json(); const userTurn = { role: 'user', parts: [{ text: prompt }] }; const modelTurn = { role: 'model', parts: [{ doc_data: data }] }; state.chatHistory.push(userTurn, modelTurn); addModelResponseMessage({ type: 'doc', data: data }, state.chatHistory.length - 1); DOMElements.chatInput.value = ''; autoResizeTextarea(); await saveCurrentChat(await generateTitle(`Document about ${prompt}`)); } catch (error) { console.error("Document generation error:", error); addModelResponseMessage({ type: 'text', data: `<div class="text-red-400"><strong>System Alert:</strong> ${escapeHtml(error.message)}</div>` }, state.chatHistory.length); } finally { setSubmitting(false); } }
@@ -1085,7 +1084,6 @@
             }
         }
 
-        // --- NEW: Fullscreen Image Viewer Logic ---
         const showImageFullscreen = (imageUrl) => {
             DOMElements.fullscreenImage.src = imageUrl;
             DOMElements.fullscreenDownloadBtn.href = imageUrl;
