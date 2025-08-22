@@ -4,9 +4,15 @@ import json
 import logging
 import base64
 import requests
+import hashlib
+import secrets
+from datetime import datetime, timedelta
 # --- CORRECTED IMPORTS ---
-from flask import Flask, request, jsonify, send_from_directory, Response, send_file, render_template
+from flask import Flask, request, jsonify, send_from_directory, Response, send_file, render_template, session, redirect, url_for
 from flask_cors import CORS
+from flask_sqlalchemy import SQLAlchemy
+from flask_bcrypt import Bcrypt
+from authlib.integrations.flask_client import OAuth
 import google.generativeai as genai
 from PIL import Image
 import io
@@ -21,15 +27,112 @@ import uuid
 app = Flask(__name__, static_folder='static', template_folder='templates')
 CORS(app)
 
+# --- Logging ---
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger('AstraNovaServer')
+
+# Configure database and authentication
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', secrets.token_hex(32))
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///astranova.db')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# OAuth configuration
+app.config['GOOGLE_CLIENT_ID'] = os.environ.get('GOOGLE_CLIENT_ID')
+app.config['GOOGLE_CLIENT_SECRET'] = os.environ.get('GOOGLE_CLIENT_SECRET')
+
+# Initialize extensions
+db = SQLAlchemy(app)
+bcrypt = Bcrypt(app)
+oauth = OAuth(app)
+
+# Configure Google OAuth
+if app.config['GOOGLE_CLIENT_ID'] and app.config['GOOGLE_CLIENT_SECRET']:
+    google = oauth.register(
+        name='google',
+        client_id=app.config['GOOGLE_CLIENT_ID'],
+        client_secret=app.config['GOOGLE_CLIENT_SECRET'],
+        server_metadata_url='https://accounts.google.com/.well-known/openid_configuration',
+        client_kwargs={
+            'scope': 'openid email profile'
+        }
+    )
+else:
+    google = None
+    logger.warning("Google OAuth not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables.")
+
 # Create a directory for downloadable files if it doesn't exist
 if not os.path.exists('downloads'):
     os.makedirs('downloads')
 app.config['DOWNLOAD_FOLDER'] = 'downloads'
 
 
-# --- Logging ---
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger('AstraNovaServer')
+# --- Database Models ---
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(120), unique=True, nullable=False, index=True)
+    username = db.Column(db.String(80), unique=True, nullable=False, index=True)
+    password_hash = db.Column(db.String(128), nullable=True)  # Nullable for OAuth users
+    avatar_url = db.Column(db.String(255), nullable=True)
+    is_oauth = db.Column(db.Boolean, default=False, nullable=False)
+    oauth_provider = db.Column(db.String(50), nullable=True)
+    oauth_id = db.Column(db.String(100), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    last_login = db.Column(db.DateTime, nullable=True)
+    
+    # Relationship to chats
+    chats = db.relationship('UserChat', backref='user', lazy=True, cascade='all, delete-orphan')
+    
+    def set_password(self, password):
+        """Hash and set the user's password."""
+        self.password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
+    
+    def check_password(self, password):
+        """Check if the provided password matches the user's password."""
+        if not self.password_hash:
+            return False
+        return bcrypt.check_password_hash(self.password_hash, password)
+    
+    def generate_avatar_url(self):
+        """Generate a cute random avatar URL for the user."""
+        # Using DiceBear for cute avatar generation
+        styles = ['adventurer', 'avataaars', 'big-ears', 'big-smile', 'croodles', 'fun-emoji']
+        style = secrets.choice(styles)
+        seed = hashlib.md5(self.email.encode()).hexdigest()[:8]
+        self.avatar_url = f"https://api.dicebear.com/7.x/{style}/svg?seed={seed}&backgroundColor=b6e3f4,c0aede,d1d4f9"
+    
+    def to_dict(self):
+        """Convert user object to dictionary for API responses."""
+        return {
+            'id': self.id,
+            'email': self.email,
+            'username': self.username,
+            'avatar_url': self.avatar_url,
+            'is_oauth': self.is_oauth,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'last_login': self.last_login.isoformat() if self.last_login else None
+        }
+
+class UserChat(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
+    chat_id = db.Column(db.String(36), nullable=False, index=True)  # UUID for chat identification
+    title = db.Column(db.String(255), nullable=False)
+    messages = db.Column(db.Text, nullable=False)  # JSON string of messages
+    custom_instruction = db.Column(db.Text, nullable=True)
+    model = db.Column(db.String(50), nullable=False, default='chat')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    
+    def to_dict(self):
+        """Convert chat object to dictionary for API responses."""
+        return {
+            'id': self.chat_id,
+            'title': self.title,
+            'messages': json.loads(self.messages) if self.messages else [],
+            'customInstruction': self.custom_instruction,
+            'model': self.model,
+            'timestamp': int(self.updated_at.timestamp() * 1000)  # JavaScript timestamp
+        }
 
 # --- Configuration ---
 GEMINI_API_KEY = os.environ.get('GOOGLE_API_KEY')
@@ -170,6 +273,330 @@ def create_pdf(title, content):
     f = io.BytesIO(pdf_bytes)
     f.seek(0)
     return f
+
+
+# --- Authentication Helper Functions ---
+def login_required(f):
+    """Decorator to require authentication for routes."""
+    from functools import wraps
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            return jsonify({'error': 'Authentication required'}), 401
+        return f(*args, **kwargs)
+    return decorated_function
+
+def get_current_user():
+    """Get the current authenticated user."""
+    if 'user_id' not in session:
+        return None
+    return User.query.get(session['user_id'])
+
+def generate_username_from_email(email):
+    """Generate a unique username from email."""
+    base_username = email.split('@')[0]
+    username = base_username
+    counter = 1
+    while User.query.filter_by(username=username).first():
+        username = f"{base_username}{counter}"
+        counter += 1
+    return username
+
+# --- Authentication Routes ---
+@app.route('/auth/signup', methods=['POST'])
+def signup():
+    """Handle user registration with email and password."""
+    try:
+        data = request.get_json()
+        email = data.get('email', '').lower().strip()
+        password = data.get('password', '')
+        username = data.get('username', '').strip()
+        
+        # Validation
+        if not email or not password:
+            return jsonify({'error': 'Email and password are required'}), 400
+        
+        if len(password) < 6:
+            return jsonify({'error': 'Password must be at least 6 characters long'}), 400
+        
+        # Check if user exists
+        existing_user = User.query.filter_by(email=email).first()
+        if existing_user:
+            return jsonify({'error': 'Email already registered'}), 400
+        
+        # Generate username if not provided
+        if not username:
+            username = generate_username_from_email(email)
+        else:
+            # Check if username is taken
+            if User.query.filter_by(username=username).first():
+                return jsonify({'error': 'Username already taken'}), 400
+        
+        # Create new user
+        user = User(email=email, username=username)
+        user.set_password(password)
+        user.generate_avatar_url()
+        
+        db.session.add(user)
+        db.session.commit()
+        
+        # Log in the user
+        session['user_id'] = user.id
+        user.last_login = datetime.utcnow()
+        db.session.commit()
+        
+        logger.info(f"New user registered: {email}")
+        return jsonify({
+            'message': 'Account created successfully',
+            'user': user.to_dict()
+        }), 201
+        
+    except Exception as e:
+        logger.error(f"Signup error: {e}")
+        db.session.rollback()
+        return jsonify({'error': 'Registration failed'}), 500
+
+@app.route('/auth/login', methods=['POST'])
+def login():
+    """Handle user login with email and password."""
+    try:
+        data = request.get_json()
+        email = data.get('email', '').lower().strip()
+        password = data.get('password', '')
+        
+        if not email or not password:
+            return jsonify({'error': 'Email and password are required'}), 400
+        
+        # Find user
+        user = User.query.filter_by(email=email).first()
+        if not user or not user.check_password(password):
+            return jsonify({'error': 'Invalid email or password'}), 401
+        
+        # Log in the user
+        session['user_id'] = user.id
+        user.last_login = datetime.utcnow()
+        db.session.commit()
+        
+        logger.info(f"User logged in: {email}")
+        return jsonify({
+            'message': 'Login successful',
+            'user': user.to_dict()
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Login error: {e}")
+        return jsonify({'error': 'Login failed'}), 500
+
+@app.route('/auth/logout', methods=['POST'])
+def logout():
+    """Handle user logout."""
+    session.pop('user_id', None)
+    return jsonify({'message': 'Logged out successfully'}), 200
+
+@app.route('/auth/google')
+def google_login():
+    """Initiate Google OAuth login."""
+    if not google:
+        return jsonify({'error': 'Google OAuth not configured'}), 503
+    
+    redirect_uri = url_for('google_callback', _external=True)
+    return google.authorize_redirect(redirect_uri)
+
+@app.route('/auth/google/callback')
+def google_callback():
+    """Handle Google OAuth callback."""
+    if not google:
+        return jsonify({'error': 'Google OAuth not configured'}), 503
+    
+    try:
+        token = google.authorize_access_token()
+        user_info = token.get('userinfo')
+        
+        if not user_info:
+            return jsonify({'error': 'Failed to get user information from Google'}), 400
+        
+        email = user_info.get('email', '').lower()
+        name = user_info.get('name', '')
+        picture = user_info.get('picture', '')
+        google_id = user_info.get('sub', '')
+        
+        if not email:
+            return jsonify({'error': 'Email not provided by Google'}), 400
+        
+        # Check if user exists
+        user = User.query.filter_by(email=email).first()
+        
+        if not user:
+            # Create new user
+            username = generate_username_from_email(email)
+            user = User(
+                email=email,
+                username=username,
+                is_oauth=True,
+                oauth_provider='google',
+                oauth_id=google_id,
+                avatar_url=picture
+            )
+            db.session.add(user)
+            
+        # Update OAuth info for existing users
+        user.oauth_provider = 'google'
+        user.oauth_id = google_id
+        if picture:
+            user.avatar_url = picture
+        
+        user.last_login = datetime.utcnow()
+        db.session.commit()
+        
+        # Log in the user
+        session['user_id'] = user.id
+        
+        logger.info(f"Google OAuth login: {email}")
+        return redirect('/?auth=success')
+        
+    except Exception as e:
+        logger.error(f"Google OAuth error: {e}")
+        return redirect('/?auth=error')
+
+@app.route('/auth/profile')
+def get_profile():
+    """Get current user profile."""
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    return jsonify({'user': user.to_dict()}), 200
+
+@app.route('/auth/check')
+def check_auth():
+    """Check if user is authenticated."""
+    user = get_current_user()
+    if user:
+        return jsonify({
+            'authenticated': True,
+            'user': user.to_dict()
+        }), 200
+    else:
+        return jsonify({'authenticated': False}), 200
+
+# --- Chat Management Routes ---
+@app.route('/chats/migrate', methods=['POST'])
+@login_required
+def migrate_chats():
+    """Migrate localStorage chats to user account."""
+    try:
+        data = request.get_json()
+        chats = data.get('chats', {})
+        user = get_current_user()
+        
+        migrated_count = 0
+        for chat_id, chat_data in chats.items():
+            # Check if chat already exists for user
+            existing_chat = UserChat.query.filter_by(user_id=user.id, chat_id=chat_id).first()
+            if existing_chat:
+                continue
+            
+            # Create new user chat
+            user_chat = UserChat(
+                user_id=user.id,
+                chat_id=chat_id,
+                title=chat_data.get('title', 'Migrated Chat'),
+                messages=json.dumps(chat_data.get('messages', [])),
+                custom_instruction=chat_data.get('customInstruction', ''),
+                model=chat_data.get('model', 'chat'),
+                created_at=datetime.fromtimestamp(chat_data.get('timestamp', 0) / 1000) if chat_data.get('timestamp') else datetime.utcnow()
+            )
+            db.session.add(user_chat)
+            migrated_count += 1
+        
+        db.session.commit()
+        logger.info(f"Migrated {migrated_count} chats for user {user.email}")
+        
+        return jsonify({
+            'message': f'Successfully migrated {migrated_count} chats',
+            'migrated_count': migrated_count
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Chat migration error: {e}")
+        db.session.rollback()
+        return jsonify({'error': 'Migration failed'}), 500
+
+@app.route('/chats', methods=['GET'])
+@login_required
+def get_user_chats():
+    """Get all chats for the authenticated user."""
+    try:
+        user = get_current_user()
+        chats = UserChat.query.filter_by(user_id=user.id).order_by(UserChat.updated_at.desc()).all()
+        
+        chats_dict = {}
+        for chat in chats:
+            chats_dict[chat.chat_id] = chat.to_dict()
+        
+        return jsonify({'chats': chats_dict}), 200
+        
+    except Exception as e:
+        logger.error(f"Get user chats error: {e}")
+        return jsonify({'error': 'Failed to retrieve chats'}), 500
+
+@app.route('/chats/<chat_id>', methods=['PUT'])
+@login_required
+def save_user_chat(chat_id):
+    """Save or update a chat for the authenticated user."""
+    try:
+        data = request.get_json()
+        user = get_current_user()
+        
+        # Find existing chat or create new one
+        user_chat = UserChat.query.filter_by(user_id=user.id, chat_id=chat_id).first()
+        
+        if not user_chat:
+            user_chat = UserChat(
+                user_id=user.id,
+                chat_id=chat_id,
+                title=data.get('title', 'New Chat'),
+                messages=json.dumps(data.get('messages', [])),
+                custom_instruction=data.get('customInstruction', ''),
+                model=data.get('model', 'chat')
+            )
+            db.session.add(user_chat)
+        else:
+            # Update existing chat
+            user_chat.title = data.get('title', user_chat.title)
+            user_chat.messages = json.dumps(data.get('messages', []))
+            user_chat.custom_instruction = data.get('customInstruction', user_chat.custom_instruction)
+            user_chat.model = data.get('model', user_chat.model)
+            user_chat.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        return jsonify({'message': 'Chat saved successfully'}), 200
+        
+    except Exception as e:
+        logger.error(f"Save user chat error: {e}")
+        db.session.rollback()
+        return jsonify({'error': 'Failed to save chat'}), 500
+
+@app.route('/chats/<chat_id>', methods=['DELETE'])
+@login_required
+def delete_user_chat(chat_id):
+    """Delete a chat for the authenticated user."""
+    try:
+        user = get_current_user()
+        user_chat = UserChat.query.filter_by(user_id=user.id, chat_id=chat_id).first()
+        
+        if not user_chat:
+            return jsonify({'error': 'Chat not found'}), 404
+        
+        db.session.delete(user_chat)
+        db.session.commit()
+        
+        return jsonify({'message': 'Chat deleted successfully'}), 200
+        
+    except Exception as e:
+        logger.error(f"Delete user chat error: {e}")
+        db.session.rollback()
+        return jsonify({'error': 'Failed to delete chat'}), 500
 
 
 # --- API Endpoints (No changes to the logic inside these endpoints) ---
@@ -404,7 +831,18 @@ def index():
 # --- REMOVED Redundant 'serve' and 'not_found' routes ---
 # Flask handles these automatically with the main index route.
 
+# --- Database Initialization ---
+def init_db():
+    """Initialize the database tables."""
+    try:
+        with app.app_context():
+            db.create_all()
+            logger.info("Database tables created successfully")
+    except Exception as e:
+        logger.error(f"Database initialization error: {e}")
+
 # --- Startup ---
 if __name__ == '__main__':
+    init_db()
     port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port, threaded=True)

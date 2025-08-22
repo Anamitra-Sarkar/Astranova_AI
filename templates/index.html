@@ -202,7 +202,38 @@
                 <h2 class="recents-heading text-xs font-semibold uppercase tracking-wider">Recent</h2>
                 <nav id="recent-chats-list" class="mt-4 space-y-1"></nav>
             </div>
-            <div class="mt-auto pt-4 border-t" style="border-color: var(--border-color);">
+            
+            <!-- Authentication Section -->
+            <div id="auth-section" class="mt-auto pt-4 border-t" style="border-color: var(--border-color);">
+                <!-- Not logged in state -->
+                <div id="auth-logged-out" class="space-y-2">
+                    <button id="login-btn" class="flex items-center w-full p-2 rounded-lg transition-colors" style="color: var(--text-secondary);" onmouseover="this.style.backgroundColor='var(--bg-tertiary)';" onmouseout="this.style.backgroundColor='transparent';">
+                        <i data-lucide="log-in" class="w-5 h-5 mr-3"></i>
+                        <span class="text-sm">Sign In</span>
+                    </button>
+                    <button id="signup-btn" class="flex items-center w-full p-2 rounded-lg transition-colors" style="color: var(--accent-primary);" onmouseover="this.style.backgroundColor='var(--bg-tertiary)';" onmouseout="this.style.backgroundColor='transparent';">
+                        <i data-lucide="user-plus" class="w-5 h-5 mr-3"></i>
+                        <span class="text-sm">Sign Up</span>
+                    </button>
+                </div>
+                
+                <!-- Logged in state -->
+                <div id="auth-logged-in" class="hidden space-y-2">
+                    <div class="flex items-center p-2 rounded-lg" style="background-color: var(--bg-tertiary);">
+                        <img id="user-avatar" src="" alt="User Avatar" class="w-8 h-8 rounded-full mr-3">
+                        <div class="flex-1 min-w-0">
+                            <p id="user-name" class="text-sm font-medium truncate" style="color: var(--text-primary);"></p>
+                            <p id="user-email" class="text-xs truncate" style="color: var(--text-muted);"></p>
+                        </div>
+                    </div>
+                    <button id="logout-btn" class="flex items-center w-full p-2 rounded-lg transition-colors" style="color: var(--text-secondary);" onmouseover="this.style.backgroundColor='var(--bg-tertiary)';" onmouseout="this.style.backgroundColor='transparent';">
+                        <i data-lucide="log-out" class="w-5 h-5 mr-3"></i>
+                        <span class="text-sm">Sign Out</span>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="pt-4 border-t" style="border-color: var(--border-color);">
                 <button id="settings-btn" class="flex items-center w-full p-2 rounded-lg transition-colors" style="color: var(--text-secondary);" onmouseover="this.style.backgroundColor='var(--bg-tertiary)';" onmouseout="this.style.backgroundColor='transparent';">
                     <i data-lucide="settings" class="w-5 h-5 mr-3"></i>
                     <span class="text-sm">Settings</span>
@@ -417,6 +448,139 @@
         </div>
     </div>
     
+    <!-- Authentication Modals -->
+    <!-- Login Modal -->
+    <div id="login-modal" class="fixed inset-0 bg-black/60 z-[60] hidden items-center justify-center p-4">
+        <div class="modal-content rounded-xl shadow-2xl w-full max-w-md p-6 message-pop-in">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold">Sign In</h2>
+                <button id="close-login-btn" class="p-2 rounded-full" onmouseover="this.style.backgroundColor='var(--bg-tertiary)';" onmouseout="this.style.backgroundColor='transparent';">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            
+            <form id="login-form" class="space-y-4">
+                <div>
+                    <label for="login-email" class="block text-sm font-medium mb-2" style="color: var(--text-secondary);">Email</label>
+                    <input type="email" id="login-email" required class="w-full p-3 rounded-lg" style="background-color: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary);" placeholder="Enter your email">
+                </div>
+                
+                <div>
+                    <label for="login-password" class="block text-sm font-medium mb-2" style="color: var(--text-secondary);">Password</label>
+                    <input type="password" id="login-password" required class="w-full p-3 rounded-lg" style="background-color: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary);" placeholder="Enter your password">
+                </div>
+                
+                <div id="login-error" class="hidden p-3 rounded-lg" style="background-color: rgba(239, 68, 68, 0.1); color: var(--danger-color); border: 1px solid var(--danger-color);">
+                    <p class="text-sm"></p>
+                </div>
+                
+                <button type="submit" id="login-submit-btn" class="w-full py-3 rounded-lg font-semibold text-white transition-colors" style="background-color: var(--accent-primary);" onmouseover="this.style.backgroundColor='var(--accent-primary-hover)';" onmouseout="this.style.backgroundColor='var(--accent-primary)';">
+                    <span id="login-submit-text">Sign In</span>
+                    <div id="login-submit-loader" class="hidden flex items-center justify-center">
+                        <div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                </button>
+            </form>
+            
+            <div class="mt-6">
+                <div class="relative">
+                    <div class="absolute inset-0 flex items-center">
+                        <div class="w-full border-t" style="border-color: var(--border-color);"></div>
+                    </div>
+                    <div class="relative flex justify-center text-sm">
+                        <span class="px-2" style="background-color: var(--modal-bg); color: var(--text-muted);">Or continue with</span>
+                    </div>
+                </div>
+                
+                <button id="google-login-btn" class="w-full mt-4 py-3 px-4 rounded-lg border font-medium transition-colors flex items-center justify-center" style="border-color: var(--border-color); color: var(--text-primary);" onmouseover="this.style.backgroundColor='var(--bg-tertiary)';" onmouseout="this.style.backgroundColor='transparent';">
+                    <svg class="w-5 h-5 mr-2" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                    </svg>
+                    Continue with Google
+                </button>
+            </div>
+            
+            <p class="mt-6 text-center text-sm" style="color: var(--text-muted);">
+                Don't have an account? 
+                <button id="switch-to-signup" class="font-medium" style="color: var(--accent-primary);">Sign up</button>
+            </p>
+        </div>
+    </div>
+    
+    <!-- Signup Modal -->
+    <div id="signup-modal" class="fixed inset-0 bg-black/60 z-[60] hidden items-center justify-center p-4">
+        <div class="modal-content rounded-xl shadow-2xl w-full max-w-md p-6 message-pop-in">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold">Create Account</h2>
+                <button id="close-signup-btn" class="p-2 rounded-full" onmouseover="this.style.backgroundColor='var(--bg-tertiary)';" onmouseout="this.style.backgroundColor='transparent';">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            
+            <form id="signup-form" class="space-y-4">
+                <div>
+                    <label for="signup-username" class="block text-sm font-medium mb-2" style="color: var(--text-secondary);">Username (optional)</label>
+                    <input type="text" id="signup-username" class="w-full p-3 rounded-lg" style="background-color: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary);" placeholder="Choose a username">
+                </div>
+                
+                <div>
+                    <label for="signup-email" class="block text-sm font-medium mb-2" style="color: var(--text-secondary);">Email</label>
+                    <input type="email" id="signup-email" required class="w-full p-3 rounded-lg" style="background-color: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary);" placeholder="Enter your email">
+                </div>
+                
+                <div>
+                    <label for="signup-password" class="block text-sm font-medium mb-2" style="color: var(--text-secondary);">Password</label>
+                    <input type="password" id="signup-password" required class="w-full p-3 rounded-lg" style="background-color: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary);" placeholder="Create a password (min 6 characters)">
+                </div>
+                
+                <div>
+                    <label for="signup-confirm-password" class="block text-sm font-medium mb-2" style="color: var(--text-secondary);">Confirm Password</label>
+                    <input type="password" id="signup-confirm-password" required class="w-full p-3 rounded-lg" style="background-color: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary);" placeholder="Confirm your password">
+                </div>
+                
+                <div id="signup-error" class="hidden p-3 rounded-lg" style="background-color: rgba(239, 68, 68, 0.1); color: var(--danger-color); border: 1px solid var(--danger-color);">
+                    <p class="text-sm"></p>
+                </div>
+                
+                <button type="submit" id="signup-submit-btn" class="w-full py-3 rounded-lg font-semibold text-white transition-colors" style="background-color: var(--accent-primary);" onmouseover="this.style.backgroundColor='var(--accent-primary-hover)';" onmouseout="this.style.backgroundColor='var(--accent-primary)';">
+                    <span id="signup-submit-text">Create Account</span>
+                    <div id="signup-submit-loader" class="hidden flex items-center justify-center">
+                        <div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                </button>
+            </form>
+            
+            <div class="mt-6">
+                <div class="relative">
+                    <div class="absolute inset-0 flex items-center">
+                        <div class="w-full border-t" style="border-color: var(--border-color);"></div>
+                    </div>
+                    <div class="relative flex justify-center text-sm">
+                        <span class="px-2" style="background-color: var(--modal-bg); color: var(--text-muted);">Or continue with</span>
+                    </div>
+                </div>
+                
+                <button id="google-signup-btn" class="w-full mt-4 py-3 px-4 rounded-lg border font-medium transition-colors flex items-center justify-center" style="border-color: var(--border-color); color: var(--text-primary);" onmouseover="this.style.backgroundColor='var(--bg-tertiary)';" onmouseout="this.style.backgroundColor='transparent';">
+                    <svg class="w-5 h-5 mr-2" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                    </svg>
+                    Continue with Google
+                </button>
+            </div>
+            
+            <p class="mt-6 text-center text-sm" style="color: var(--text-muted);">
+                Already have an account? 
+                <button id="switch-to-login" class="font-medium" style="color: var(--accent-primary);">Sign in</button>
+            </p>
+        </div>
+    </div>
+    
     <!-- Fullscreen Image Viewer -->
     <div id="fullscreen-image-viewer" class="fixed inset-0 z-[70] hidden items-center justify-center p-4">
         <div class="absolute top-4 right-4 flex space-x-2">
@@ -493,8 +657,63 @@
             fullscreenImage: document.getElementById('fullscreen-image'),
             fullscreenDownloadBtn: document.getElementById('fullscreen-download-btn'),
             fullscreenCloseBtn: document.getElementById('fullscreen-close-btn'),
+            
+            // Authentication elements
+            authLoggedOut: document.getElementById('auth-logged-out'),
+            authLoggedIn: document.getElementById('auth-logged-in'),
+            loginBtn: document.getElementById('login-btn'),
+            signupBtn: document.getElementById('signup-btn'),
+            logoutBtn: document.getElementById('logout-btn'),
+            userAvatar: document.getElementById('user-avatar'),
+            userName: document.getElementById('user-name'),
+            userEmail: document.getElementById('user-email'),
+            
+            // Login modal
+            loginModal: document.getElementById('login-modal'),
+            closeLoginBtn: document.getElementById('close-login-btn'),
+            loginForm: document.getElementById('login-form'),
+            loginEmail: document.getElementById('login-email'),
+            loginPassword: document.getElementById('login-password'),
+            loginError: document.getElementById('login-error'),
+            loginSubmitBtn: document.getElementById('login-submit-btn'),
+            loginSubmitText: document.getElementById('login-submit-text'),
+            loginSubmitLoader: document.getElementById('login-submit-loader'),
+            googleLoginBtn: document.getElementById('google-login-btn'),
+            switchToSignup: document.getElementById('switch-to-signup'),
+            
+            // Signup modal
+            signupModal: document.getElementById('signup-modal'),
+            closeSignupBtn: document.getElementById('close-signup-btn'),
+            signupForm: document.getElementById('signup-form'),
+            signupUsername: document.getElementById('signup-username'),
+            signupEmail: document.getElementById('signup-email'),
+            signupPassword: document.getElementById('signup-password'),
+            signupConfirmPassword: document.getElementById('signup-confirm-password'),
+            signupError: document.getElementById('signup-error'),
+            signupSubmitBtn: document.getElementById('signup-submit-btn'),
+            signupSubmitText: document.getElementById('signup-submit-text'),
+            signupSubmitLoader: document.getElementById('signup-submit-loader'),
+            googleSignupBtn: document.getElementById('google-signup-btn'),
+            switchToLogin: document.getElementById('switch-to-login'),
         };
-        let state = { chatHistory: [], currentChatId: null, isSubmitting: false, selectedModel: 'chat', attachedImageB64: null, abortController: new AbortController(), customInstruction: '', isListening: false, isSpeechEnabled: false, docType: 'pdf', docLength: 'medium', aiThemeCache: null };
+        let state = { 
+            chatHistory: [], 
+            currentChatId: null, 
+            isSubmitting: false, 
+            selectedModel: 'chat', 
+            attachedImageB64: null, 
+            abortController: new AbortController(), 
+            customInstruction: '', 
+            isListening: false, 
+            isSpeechEnabled: false, 
+            docType: 'pdf', 
+            docLength: 'medium', 
+            aiThemeCache: null,
+            // Authentication state
+            isAuthenticated: false,
+            currentUser: null,
+            chatMigrationPending: false
+        };
 
         // --- Chat & UI Management ---
         const getSavedChats = () => JSON.parse(localStorage.getItem('astraNovaChats') || '{}');
@@ -858,6 +1077,263 @@
             isSpeaking = false;
         };
 
+        // --- Authentication Functions ---
+        const authAPI = {
+            async checkAuth() {
+                try {
+                    const response = await fetch(`${config.backendUrl}/auth/check`);
+                    return await response.json();
+                } catch (error) {
+                    console.error('Auth check failed:', error);
+                    return { authenticated: false };
+                }
+            },
+
+            async login(email, password) {
+                const response = await fetch(`${config.backendUrl}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                return await response.json();
+            },
+
+            async signup(email, password, username) {
+                const response = await fetch(`${config.backendUrl}/auth/signup`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password, username })
+                });
+                return await response.json();
+            },
+
+            async logout() {
+                const response = await fetch(`${config.backendUrl}/auth/logout`, {
+                    method: 'POST'
+                });
+                return await response.json();
+            },
+
+            async migrateChats(chats) {
+                const response = await fetch(`${config.backendUrl}/chats/migrate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ chats })
+                });
+                return await response.json();
+            },
+
+            async getUserChats() {
+                const response = await fetch(`${config.backendUrl}/chats`);
+                return await response.json();
+            },
+
+            async saveUserChat(chatId, chatData) {
+                const response = await fetch(`${config.backendUrl}/chats/${chatId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(chatData)
+                });
+                return await response.json();
+            }
+        };
+
+        function updateAuthUI() {
+            if (state.isAuthenticated && state.currentUser) {
+                // Show logged in state
+                DOMElements.authLoggedOut.classList.add('hidden');
+                DOMElements.authLoggedIn.classList.remove('hidden');
+                
+                // Update user info
+                DOMElements.userAvatar.src = state.currentUser.avatar_url || '/static/default-avatar.png';
+                DOMElements.userName.textContent = state.currentUser.username || 'User';
+                DOMElements.userEmail.textContent = state.currentUser.email || '';
+            } else {
+                // Show logged out state
+                DOMElements.authLoggedOut.classList.remove('hidden');
+                DOMElements.authLoggedIn.classList.add('hidden');
+            }
+        }
+
+        function showError(elementId, message) {
+            const errorEl = document.getElementById(elementId);
+            const messageEl = errorEl.querySelector('p');
+            messageEl.textContent = message;
+            errorEl.classList.remove('hidden');
+        }
+
+        function hideError(elementId) {
+            document.getElementById(elementId).classList.add('hidden');
+        }
+
+        function setLoading(submitBtnId, textId, loaderId, isLoading) {
+            const submitBtn = document.getElementById(submitBtnId);
+            const textEl = document.getElementById(textId);
+            const loaderEl = document.getElementById(loaderId);
+            
+            submitBtn.disabled = isLoading;
+            if (isLoading) {
+                textEl.classList.add('hidden');
+                loaderEl.classList.remove('hidden');
+            } else {
+                textEl.classList.remove('hidden');
+                loaderEl.classList.add('hidden');
+            }
+        }
+
+        async function handleLogin(email, password) {
+            try {
+                setLoading('login-submit-btn', 'login-submit-text', 'login-submit-loader', true);
+                hideError('login-error');
+                
+                const result = await authAPI.login(email, password);
+                
+                if (result.user) {
+                    state.isAuthenticated = true;
+                    state.currentUser = result.user;
+                    updateAuthUI();
+                    closeModal('login-modal');
+                    
+                    // Migrate localStorage chats if any exist
+                    await migrateChatData();
+                    
+                    showNotification('Welcome back! Successfully signed in.', 'success');
+                } else {
+                    showError('login-error', result.error || 'Login failed');
+                }
+            } catch (error) {
+                showError('login-error', 'Network error. Please try again.');
+                console.error('Login error:', error);
+            } finally {
+                setLoading('login-submit-btn', 'login-submit-text', 'login-submit-loader', false);
+            }
+        }
+
+        async function handleSignup(email, password, username) {
+            try {
+                setLoading('signup-submit-btn', 'signup-submit-text', 'signup-submit-loader', true);
+                hideError('signup-error');
+                
+                const result = await authAPI.signup(email, password, username);
+                
+                if (result.user) {
+                    state.isAuthenticated = true;
+                    state.currentUser = result.user;
+                    updateAuthUI();
+                    closeModal('signup-modal');
+                    
+                    // Migrate localStorage chats
+                    await migrateChatData();
+                    
+                    showNotification('Account created successfully! Welcome to AstraNova.', 'success');
+                } else {
+                    showError('signup-error', result.error || 'Signup failed');
+                }
+            } catch (error) {
+                showError('signup-error', 'Network error. Please try again.');
+                console.error('Signup error:', error);
+            } finally {
+                setLoading('signup-submit-btn', 'signup-submit-text', 'signup-submit-loader', false);
+            }
+        }
+
+        async function handleLogout() {
+            try {
+                await authAPI.logout();
+                state.isAuthenticated = false;
+                state.currentUser = null;
+                updateAuthUI();
+                
+                // Clear current chat and reload from localStorage
+                state.chatHistory = [];
+                state.currentChatId = null;
+                loadLocalChats();
+                
+                showNotification('Successfully signed out.', 'info');
+            } catch (error) {
+                console.error('Logout error:', error);
+            }
+        }
+
+        async function migrateChatData() {
+            try {
+                const localChats = getSavedChats();
+                const chatKeys = Object.keys(localChats);
+                
+                if (chatKeys.length > 0 && !state.chatMigrationPending) {
+                    state.chatMigrationPending = true;
+                    const result = await authAPI.migrateChats(localChats);
+                    
+                    if (result.migrated_count > 0) {
+                        showNotification(`Migrated ${result.migrated_count} chat(s) to your account.`, 'success');
+                        // Clear localStorage after successful migration
+                        localStorage.removeItem('astraNovaChats');
+                    }
+                    
+                    // Load user chats
+                    await loadUserChats();
+                    state.chatMigrationPending = false;
+                }
+            } catch (error) {
+                console.error('Chat migration error:', error);
+                state.chatMigrationPending = false;
+            }
+        }
+
+        async function loadUserChats() {
+            try {
+                const result = await authAPI.getUserChats();
+                if (result.chats) {
+                    // Replace localStorage with user chats
+                    saveChats(result.chats);
+                    updateUIForCurrentChat();
+                }
+            } catch (error) {
+                console.error('Load user chats error:', error);
+            }
+        }
+
+        function loadLocalChats() {
+            const chats = getSavedChats();
+            const lastChatId = Object.keys(chats).sort((a, b) => (chats[b].timestamp || 0) - (chats[a].timestamp || 0))[0];
+            if (lastChatId) {
+                loadChat(lastChatId);
+            } else {
+                startNewChat();
+            }
+        }
+
+        function showNotification(message, type = 'info') {
+            // Create a simple notification (you can enhance this)
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 z-[100] p-4 rounded-lg shadow-lg message-pop-in max-w-sm`;
+            
+            const bgColor = type === 'success' ? 'bg-green-600' : type === 'error' ? 'bg-red-600' : 'bg-blue-600';
+            notification.style.cssText = `background-color: var(--accent-primary); color: white;`;
+            
+            notification.innerHTML = `
+                <div class="flex items-center">
+                    <span class="flex-1">${message}</span>
+                    <button onclick="this.parentElement.parentElement.remove()" class="ml-2 p-1">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 5000);
+        }
+
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.remove('hidden');
+            document.getElementById(modalId).classList.add('flex');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+            document.getElementById(modalId).classList.remove('flex');
+        }
+
         // --- Core Logic Functions ---
         async function generateTitle(firstMessage) { try { const response = await fetch(`${config.backendUrl}/generate-title`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: firstMessage }) }); if (!response.ok) return 'New Chat'; return (await response.json()).title || 'New Chat'; } catch (error) { return 'New Chat'; } }
         async function handleFormSubmit() { stopSpeech(); const messageText = DOMElements.chatInput.value.trim(); if ((!messageText && !state.attachedImageB64) || state.isSubmitting) return; const userMessageIndex = state.chatHistory.length; addUserMessage(messageText, state.attachedImageB64, userMessageIndex); if (state.selectedModel === 'docs') { await handleDocumentGeneration(messageText); return; } setSubmitting(true); const userTurn = { role: 'user', parts: [] }; if (messageText) userTurn.parts.push({ text: messageText }); if (state.attachedImageB64) { const [meta, data] = state.attachedImageB64.split(','); userTurn.parts.push({ inline_data: { mime_type: meta.match(/:(.*?);/)[1], data: data } }); } state.chatHistory.push(userTurn); DOMElements.chatInput.value = ''; autoResizeTextarea(); removeAttachedImage(); try { if (state.selectedModel === 'image') { await handleImageGeneration(messageText); } else { await handleStreamingRequest('/chat-stream', { history: state.chatHistory, customInstruction: state.customInstruction }); } } catch (error) { if (error.name === 'AbortError') { const lastBubbleContent = DOMElements.chatWindow.querySelector('.model-bubble:last-child .markdown-content'); if (lastBubbleContent) lastBubbleContent.innerHTML += `<p class="text-yellow-400 text-sm mt-2">Stream terminated by observer.</p>`; } else { addModelResponseMessage({ type: 'text', data: `<div class="text-red-400"><strong>System Alert:</strong> ${escapeHtml(error.message)}</div>` }, state.chatHistory.length); state.chatHistory.pop(); } } finally { setSubmitting(false); updateUIForCurrentChat(); } }
@@ -958,15 +1434,41 @@
             if (!state.currentChatId) {
                 state.currentChatId = `chat-${crypto.randomUUID()}`;
             }
+            
+            const chatData = {
+                title: title || 'New Chat',
+                messages: state.chatHistory,
+                customInstruction: state.customInstruction,
+                model: state.selectedModel
+            };
+            
+            // For authenticated users, save to server
+            if (state.isAuthenticated) {
+                try {
+                    await authAPI.saveUserChat(state.currentChatId, chatData);
+                } catch (error) {
+                    console.error("Failed to save chat to server:", error);
+                    // Fall back to localStorage
+                    saveChatLocally(chatData);
+                }
+            } else {
+                // For non-authenticated users, save to localStorage
+                saveChatLocally(chatData);
+            }
+            
+            updateUIForCurrentChat();
+        }
+        
+        function saveChatLocally(chatData) {
             const chats = getSavedChats();
             const existingChat = chats[state.currentChatId] || {};
             chats[state.currentChatId] = {
                 ...existingChat,
-                title: title || existingChat.title || 'New Chat',
-                history: state.chatHistory,
+                title: chatData.title || existingChat.title || 'New Chat',
+                history: chatData.messages,
                 timestamp: Date.now(),
-                customInstruction: state.customInstruction,
-                model: state.selectedModel
+                customInstruction: chatData.customInstruction,
+                model: chatData.model
             };
             
             try {
@@ -990,7 +1492,6 @@
                     console.error("Failed to save chat:", e);
                 }
             }
-            updateUIForCurrentChat();
         }
 
         function startNewChat() { stopSpeech(); state.currentChatId = null; state.chatHistory = []; state.customInstruction = ''; DOMElements.customInstructionInput.value = ''; removeAttachedImage(); updateUIForModel(state.selectedModel); const msg = state.selectedModel === 'chat' ? 'Salutations... A new communication channel is open.' : state.selectedModel === 'image' ? 'The stellar forge is active. Describe the cosmos you wish to render.' : 'The document forge is ready. Describe the document you wish to create.'; DOMElements.chatWindow.innerHTML = `<div class="flex items-start gap-3 mb-6 message-pop-in"><img src="${config.defaultAvatar}" class="w-10 h-10 rounded-xl"><div class="model-bubble p-4 rounded-2xl rounded-bl-lg w-full"><p class="font-semibold mb-2">AstraNova</p><p>${msg}</p></div></div>`; updateUIForCurrentChat(); if (window.innerWidth < 768) applySidebarState(true); }
@@ -1248,6 +1749,77 @@
                 }
             });
 
+            // Authentication event listeners
+            DOMElements.loginBtn.addEventListener('click', () => openModal('login-modal'));
+            DOMElements.signupBtn.addEventListener('click', () => openModal('signup-modal'));
+            DOMElements.logoutBtn.addEventListener('click', handleLogout);
+            
+            DOMElements.closeLoginBtn.addEventListener('click', () => closeModal('login-modal'));
+            DOMElements.closeSignupBtn.addEventListener('click', () => closeModal('signup-modal'));
+            
+            DOMElements.switchToSignup.addEventListener('click', (e) => {
+                e.preventDefault();
+                closeModal('login-modal');
+                openModal('signup-modal');
+            });
+            
+            DOMElements.switchToLogin.addEventListener('click', (e) => {
+                e.preventDefault();
+                closeModal('signup-modal');
+                openModal('login-modal');
+            });
+            
+            DOMElements.loginForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const email = DOMElements.loginEmail.value.trim();
+                const password = DOMElements.loginPassword.value;
+                if (email && password) {
+                    handleLogin(email, password);
+                }
+            });
+            
+            DOMElements.signupForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const email = DOMElements.signupEmail.value.trim();
+                const password = DOMElements.signupPassword.value;
+                const confirmPassword = DOMElements.signupConfirmPassword.value;
+                const username = DOMElements.signupUsername.value.trim();
+                
+                if (password !== confirmPassword) {
+                    showError('signup-error', 'Passwords do not match');
+                    return;
+                }
+                
+                if (password.length < 6) {
+                    showError('signup-error', 'Password must be at least 6 characters long');
+                    return;
+                }
+                
+                if (email && password) {
+                    handleSignup(email, password, username);
+                }
+            });
+            
+            DOMElements.googleLoginBtn.addEventListener('click', () => {
+                window.location.href = `${config.backendUrl}/auth/google`;
+            });
+            
+            DOMElements.googleSignupBtn.addEventListener('click', () => {
+                window.location.href = `${config.backendUrl}/auth/google`;
+            });
+            
+            // Close modals when clicking outside
+            DOMElements.loginModal.addEventListener('click', (e) => {
+                if (e.target === DOMElements.loginModal) closeModal('login-modal');
+            });
+            
+            DOMElements.signupModal.addEventListener('click', (e) => {
+                if (e.target === DOMElements.signupModal) closeModal('signup-modal');
+            });
+
+            // Initialize authentication state
+            initAuth();
+
             const chats = getSavedChats();
             const lastChatId = Object.keys(chats).sort((a, b) => (chats[b].timestamp || 0) - (chats[a].timestamp || 0))[0];
             if (lastChatId) {
@@ -1258,6 +1830,31 @@
             }
             lucide.createIcons();
         };
+        
+        // Initialize authentication
+        async function initAuth() {
+            try {
+                const authResult = await authAPI.checkAuth();
+                if (authResult.authenticated && authResult.user) {
+                    state.isAuthenticated = true;
+                    state.currentUser = authResult.user;
+                    updateAuthUI();
+                    
+                    // Load user chats if authenticated
+                    await loadUserChats();
+                } else {
+                    state.isAuthenticated = false;
+                    state.currentUser = null;
+                    updateAuthUI();
+                }
+            } catch (error) {
+                console.error('Auth initialization failed:', error);
+                state.isAuthenticated = false;
+                state.currentUser = null;
+                updateAuthUI();
+            }
+        }
+        
         initialize();
     </script>
 </body>
