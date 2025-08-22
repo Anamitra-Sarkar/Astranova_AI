@@ -218,7 +218,7 @@ def chat_stream():
         chat_history_for_model = history[:-1]
         model_to_use = default_streaming_model
         if custom_instruction:
-            model_to_use = genai.GenerativeModel('gemini-1.5-pro-latest', system_instruction=custom_instruction)
+            model_to_use = genai.GenerativeModel('gemini-2.5-pro', system_instruction=custom_instruction)
 
         def generate():
             chat_session = model_to_use.start_chat(history=chat_history_for_model)
@@ -244,9 +244,9 @@ def generate_doc():
             return format_error("A prompt is required to generate a document.", 400)
 
         length_map = {
-            "short": "a concise summary of about 200 words",
-            "medium": "a detailed explanation of about 500 words",
-            "detailed": "a comprehensive report of about 1000 words"
+            "short": "a concise summary of about 400 words",
+            "medium": "a detailed explanation of about 800 words",
+            "detailed": "a comprehensive report of about 1500 words"
         }
 
         formatting_instruction = ""
@@ -320,7 +320,7 @@ def generate_theme():
 
         logger.info(f"Generating theme with prompt: '{prompt}'")
 
-        api_url = f"https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key={GEMINI_API_KEY}"
+        api_url = f"https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-ultra-generate-001:predict?key={GEMINI_API_KEY}"
         full_prompt = f"A beautiful, high-resolution, scenic background image of: {prompt}. Widescreen 16:9, cinematic, desktop wallpaper, 4k."
         payload = {"instances": [{"prompt": full_prompt}], "parameters": {"sampleCount": 1}}
         headers = {'Content-Type': 'application/json'}
