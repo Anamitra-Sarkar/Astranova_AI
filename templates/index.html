@@ -21,7 +21,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css" id="hljs-theme">
 
-    <!-- NEW: Firebase JS SDK -->
+    <!-- Firebase JS SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
 
@@ -272,10 +272,12 @@
                 <button id="summarize-btn" class="hidden flex items-center space-x-2 p-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50"><i data-lucide="wand-sparkles" class="w-5 h-5"></i><span class="text-sm font-semibold text-white">Summarize</span></button>
             </header>
 
-            <div id="chat-window" class="flex-1 overflow-y-auto p-4 md:p-8"><div class="max-w-3xl mx-auto w-full"></div></div>
+            <!-- UPDATED: Increased max-width from 3xl to 5xl -->
+            <div id="chat-window" class="flex-1 overflow-y-auto p-4 md:p-8"><div class="max-w-5xl mx-auto w-full"></div></div>
 
             <div class="chat-input-area p-4">
-                <div class="max-w-3xl mx-auto w-full">
+                 <!-- UPDATED: Increased max-width from 3xl to 5xl -->
+                <div class="max-w-5xl mx-auto w-full">
                     <div id="stop-generating-container" class="flex justify-center mb-2 hidden"><button id="stop-generating-btn" class="flex items-center space-x-2 p-2 px-4 text-sm rounded-lg bg-red-800 hover:bg-red-700 text-white"><i data-lucide="square" class="w-4 h-4"></i><span>Stop Generating</span></button></div>
                     
                     <div id="doc-options-container" class="hidden mb-2 space-y-2">
@@ -597,7 +599,7 @@
     </div>
 
     <script>
-        // --- NEW: Firebase Configuration ---
+        // --- Firebase Configuration ---
         const firebaseConfig = {
           apiKey: "AIzaSyDEAOr3iqU6TJZ6uztMvC5mquZECPcBkkE",
           authDomain: "fir-config-d3c36.firebaseapp.com",
@@ -615,7 +617,6 @@
         // --- Configuration & State ---
         const config = { 
             backendUrl: window.location.origin, 
-            // Default avatar path using url_for
             defaultAvatar: "{{ url_for('static', filename='image.png') }}",
             backgrounds: {
                 cars: 'https://www.motortrend.com/uploads/sites/11/2018/12/50-Years-of-IMSA-16.jpg',
@@ -631,7 +632,7 @@
             html: document.documentElement,
             body: document.body,
             mainContent: document.getElementById('main-content'),
-            chatForm: document.getElementById('chat-form'), chatInput: document.getElementById('chat-input'), chatWindow: document.getElementById('chat-window').querySelector('.max-w-3xl'),
+            chatForm: document.getElementById('chat-form'), chatInput: document.getElementById('chat-input'), chatWindow: document.getElementById('chat-window').querySelector('.max-w-5xl'),
             newChatBtn: document.getElementById('new-chat-btn'), menuBtn: document.getElementById('menu-btn'), closeMenuBtn: document.getElementById('close-menu-btn'),
             sidebar: document.getElementById('sidebar'), sidebarOverlay: document.getElementById('sidebar-overlay'), recentChatsList: document.getElementById('recent-chats-list'),
             summarizeBtn: document.getElementById('summarize-btn'), chatTitle: document.getElementById('chat-title'), submitBtn: document.getElementById('submit-btn'),
@@ -1096,10 +1097,6 @@
 
         // --- Authentication Functions (REVISED) ---
         const authAPI = {
-            async verifyToken(token) {
-                // This function is no longer needed as the backend check_auth handles session verification
-                // We keep the object structure for other API calls
-            },
             async logout() {
                 const response = await fetch(`${config.backendUrl}/auth/logout`, { method: 'POST' });
                 return await response.json();
@@ -1121,6 +1118,13 @@
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(chatData)
+                });
+                return await response.json();
+            },
+            // NEW: Function to call the delete endpoint on the backend
+            async deleteUserChat(chatId) {
+                const response = await fetch(`${config.backendUrl}/chats/${chatId}`, {
+                    method: 'DELETE',
                 });
                 return await response.json();
             }
@@ -1372,9 +1376,93 @@
         async function handleImageGeneration(prompt) { const modelMessageIndex = state.chatHistory.length; const elements = addAstraMessageBubble(modelMessageIndex); const response = await fetch(`${config.backendUrl}/generate-image`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt }) }); elements.container.remove(); if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || `Stellar forge unstable (Status: ${response.status})`); const data = await response.json(); addModelResponseMessage({ type: 'image', data: `data:image/png;base64,${data.image_b64}` }, modelMessageIndex); state.chatHistory.push({ role: 'model', parts: [{ inline_data: { mime_type: 'image/png', data: data.image_b64 } }] }); await saveCurrentChat(state.chatHistory.length === 2 ? await generateTitle(prompt || "Image Generation") : undefined); }
         async function handleDocumentGeneration(prompt) { setSubmitting(true); try { const response = await fetch(`${config.backendUrl}/generate-doc`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: prompt, docType: state.docType, length: state.docLength }) }); if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.error || 'Failed to generate document.'); } const data = await response.json(); const userTurn = { role: 'user', parts: [{ text: prompt }] }; const modelTurn = { role: 'model', parts: [{ doc_data: data }] }; state.chatHistory.push(userTurn, modelTurn); addModelResponseMessage({ type: 'doc', data: data }, state.chatHistory.length - 1); DOMElements.chatInput.value = ''; autoResizeTextarea(); await saveCurrentChat(await generateTitle(`Document about ${prompt}`)); } catch (error) { console.error("Document generation error:", error); addModelResponseMessage({ type: 'text', data: `<div class="text-red-400"><strong>System Alert:</strong> ${escapeHtml(error.message)}</div>` }, state.chatHistory.length); } finally { setSubmitting(false); } }
         function updateUIForCurrentChat() { const chats = getSavedChats(); const title = state.currentChatId ? chats[state.currentChatId]?.title : 'New Chat'; DOMElements.chatTitle.textContent = title; DOMElements.chatTitle.title = title; DOMElements.summarizeBtn.classList.toggle('hidden', state.chatHistory.length < 2 && state.selectedModel === 'chat'); renderRecentChats(); }
-        function renderRecentChats() { const chats = getSavedChats(); const sortedChatIds = Object.keys(chats).sort((a, b) => { const chatA = chats[a]; const chatB = chats[b]; if (chatA.isPinned && !chatB.isPinned) return -1; if (!chatA.isPinned && chatB.isPinned) return 1; return (chatB.timestamp || 0) - (chatA.timestamp || 0); }); DOMElements.recentChatsList.innerHTML = sortedChatIds.length === 0 ? `<p class="p-2 text-sm recents-heading">No recent conversations.</p>` : ''; sortedChatIds.forEach(chatId => { const chat = chats[chatId]; const item = document.createElement('a'); item.href = '#'; item.className = `recent-chat-item flex items-center justify-between p-2 rounded-lg transition-colors text-sm ${chatId === state.currentChatId ? 'active-chat' : ''}`; item.dataset.chatId = chatId; const pinIcon = chat.isPinned ? `<i data-lucide="pin" class="w-4 h-4" fill="currentColor"></i>` : `<i data-lucide="pin" class="w-4 h-4"></i>`; item.innerHTML = `<span class="truncate" title="${escapeHtml(chat.title)}">${escapeHtml(chat.title)}</span><div class="chat-actions items-center space-x-1"><button class="pin-btn p-1 ${chat.isPinned ? 'pinned' : ''}" style="color: var(--text-muted);">${pinIcon}</button><button class="delete-btn p-1" style="color: var(--text-muted);"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>`; item.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); if (e.target.closest('.delete-btn')) { deleteChat(chatId); } else if (e.target.closest('.pin-btn')) { togglePinChat(chatId); } else { loadChat(chatId); } }); DOMElements.recentChatsList.appendChild(item); }); lucide.createIcons(); }
-        function loadChat(chatId) { const chat = getSavedChats()[chatId]; if (!chat) return; stopSpeech(); state.currentChatId = chatId; state.chatHistory = chat.history; state.customInstruction = chat.customInstruction || ''; DOMElements.customInstructionInput.value = state.customInstruction; updateUIForModel(chat.model || 'chat'); DOMElements.chatWindow.innerHTML = ''; chat.history.forEach((turn, index) => { const textPart = turn.parts.find(p => p.text)?.text || ''; const imagePartData = turn.parts.find(p => p.inline_data)?.inline_data; const docPartData = turn.parts.find(p => p.doc_data)?.doc_data; if (turn.role === 'user') { addUserMessage(textPart, imagePartData ? `data:${imagePartData.mime_type};base64,${imagePartData.data}` : null, index); } else if (turn.role === 'model') { if (imagePartData) addModelResponseMessage({ type: 'image', data: `data:${imagePartData.mime_type};base64,${imagePartData.data}` }, index); else if (docPartData) addModelResponseMessage({ type: 'doc', data: docPartData }, index); else if (textPart) addModelResponseMessage({ type: 'text', data: marked.parse(textPart), fullText: textPart }, index); } }); updateUIForCurrentChat(); if (window.innerWidth < 768) applySidebarState(true); }
-        function deleteChat(chatId) { showConfirmation( 'Delete Conversation?', 'This will permanently delete this chat.', () => { const chats = getSavedChats(); delete chats[chatId]; saveChats(chats); if (state.currentChatId === chatId) startNewChat(); else renderRecentChats(); hideConfirmation(); } ); }
+        
+        // NEW: Helper function to handle different timestamp formats
+        const getTimestampSeconds = (timestamp) => {
+            if (!timestamp) return 0;
+            // Handle Firestore Timestamp object
+            if (typeof timestamp === 'object' && timestamp.hasOwnProperty('_seconds')) {
+                return timestamp._seconds;
+            }
+            // Handle JavaScript Date.now() timestamp (milliseconds)
+            if (typeof timestamp === 'number') {
+                return Math.floor(timestamp / 1000);
+            }
+            return 0; // Fallback for any other format
+        };
+
+        // UPDATED: renderRecentChats function with corrected sorting logic
+        function renderRecentChats() { 
+            const chats = getSavedChats(); 
+            const sortedChatIds = Object.keys(chats).sort((a, b) => { 
+                const chatA = chats[a]; 
+                const chatB = chats[b]; 
+                if (chatA.isPinned && !chatB.isPinned) return -1; 
+                if (!chatA.isPinned && chatB.isPinned) return 1; 
+                
+                // Use the new helper function for reliable sorting
+                const timeA = getTimestampSeconds(chatA.timestamp);
+                const timeB = getTimestampSeconds(chatB.timestamp);
+                
+                return timeB - timeA; 
+            }); 
+            DOMElements.recentChatsList.innerHTML = sortedChatIds.length === 0 ? `<p class="p-2 text-sm recents-heading">No recent conversations.</p>` : ''; 
+            sortedChatIds.forEach(chatId => { 
+                const chat = chats[chatId]; 
+                const item = document.createElement('a'); 
+                item.href = '#'; 
+                item.className = `recent-chat-item flex items-center justify-between p-2 rounded-lg transition-colors text-sm ${chatId === state.currentChatId ? 'active-chat' : ''}`; 
+                item.dataset.chatId = chatId; 
+                const pinIcon = chat.isPinned ? `<i data-lucide="pin" class="w-4 h-4" fill="currentColor"></i>` : `<i data-lucide="pin" class="w-4 h-4"></i>`; 
+                item.innerHTML = `<span class="truncate" title="${escapeHtml(chat.title)}">${escapeHtml(chat.title)}</span><div class="chat-actions items-center space-x-1"><button class="pin-btn p-1 ${chat.isPinned ? 'pinned' : ''}" style="color: var(--text-muted);">${pinIcon}</button><button class="delete-btn p-1" style="color: var(--text-muted);"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>`; 
+                item.addEventListener('click', (e) => { 
+                    e.preventDefault(); 
+                    e.stopPropagation(); 
+                    if (e.target.closest('.delete-btn')) { 
+                        deleteChat(chatId); 
+                    } else if (e.target.closest('.pin-btn')) { 
+                        togglePinChat(chatId); 
+                    } else { 
+                        loadChat(chatId); 
+                    } 
+                }); 
+                DOMElements.recentChatsList.appendChild(item); 
+            }); 
+            lucide.createIcons(); 
+        }
+
+        function loadChat(chatId) { const chat = getSavedChats()[chatId]; if (!chat) return; stopSpeech(); state.currentChatId = chatId; state.chatHistory = chat.history || []; state.customInstruction = chat.customInstruction || ''; DOMElements.customInstructionInput.value = state.customInstruction; updateUIForModel(chat.model || 'chat'); DOMElements.chatWindow.innerHTML = ''; state.chatHistory.forEach((turn, index) => { const textPart = turn.parts.find(p => p.text)?.text || ''; const imagePartData = turn.parts.find(p => p.inline_data)?.inline_data; const docPartData = turn.parts.find(p => p.doc_data)?.doc_data; if (turn.role === 'user') { addUserMessage(textPart, imagePartData ? `data:${imagePartData.mime_type};base64,${imagePartData.data}` : null, index); } else if (turn.role === 'model') { if (imagePartData) addModelResponseMessage({ type: 'image', data: `data:${imagePartData.mime_type};base64,${imagePartData.data}` }, index); else if (docPartData) addModelResponseMessage({ type: 'doc', data: docPartData }, index); else if (textPart) addModelResponseMessage({ type: 'text', data: marked.parse(textPart), fullText: textPart }, index); } }); updateUIForCurrentChat(); if (window.innerWidth < 768) applySidebarState(true); }
+        
+        // UPDATED: deleteChat function to call the backend for logged-in users
+        function deleteChat(chatId) { 
+            showConfirmation( 
+                'Delete Conversation?', 
+                'This will permanently delete this chat.', 
+                async () => { 
+                    // If the user is logged in, tell the server to delete the chat
+                    if (state.isAuthenticated) {
+                        try {
+                            await authAPI.deleteUserChat(chatId);
+                        } catch (error) {
+                            console.error("Failed to delete chat on server:", error);
+                            showNotification("Could not delete chat on server.", "error");
+                        }
+                    }
+
+                    // Always update the local storage as well
+                    const chats = getSavedChats(); 
+                    delete chats[chatId]; 
+                    saveChats(chats); 
+
+                    if (state.currentChatId === chatId) { 
+                        startNewChat(); 
+                    } else { 
+                        renderRecentChats(); 
+                    } 
+                    hideConfirmation(); 
+                } 
+            ); 
+        }
         
         const togglePinChat = (chatId) => {
             const chats = getSavedChats();
@@ -1783,7 +1871,6 @@
                     setLoading('signup-submit-btn', 'signup-submit-text', 'signup-submit-loader', false);
 
                     // Create a server session by sending the token
-                    // This is a simplified approach. In production, you'd handle token refreshes.
                     try {
                         const idToken = await user.getIdToken();
                         // This fetch call establishes the server-side session
