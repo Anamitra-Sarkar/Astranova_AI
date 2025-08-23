@@ -21,6 +21,7 @@ werkzeug = "^3.0.3"
 requests = "^2.32.3"
 fpdf = "^1.7.2"
 python-pptx = "^0.6.23"
+firebase-admin = "^6.5.0" # <-- This is the required package
 
 [build-system]
 requires = ["poetry-core"]
