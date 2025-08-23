@@ -91,6 +91,13 @@
         .main-header { background-color: var(--header-bg); border-bottom: 1px solid; position: relative; z-index: 20; }
         .chat-input-area { background-color: var(--bg-primary); border-top: 1px solid var(--border-color); }
         .chat-input { background-color: var(--bg-tertiary); color: var(--text-primary); }
+        
+        /* UPDATED: Added max-height and overflow-y for scrollable input */
+        #chat-input {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
         .user-bubble { background: var(--user-bubble-bg); color: white; }
         .model-bubble { background-color: var(--model-bubble-bg); color: var(--text-primary); }
         .recent-chat-item.active-chat { background-color: var(--bg-tertiary); }
@@ -847,10 +854,11 @@
                     </button>
                 </div>` : '';
 
+            // UPDATED: Increased max-width from xl to 4xl
             const messageHTML = `
                 <div class="user-message-container flex items-start gap-2 mb-6 justify-end message-pop-in" data-message-index="${index}">
                     ${actionButtonsHTML}
-                    <div class="user-bubble p-4 rounded-2xl rounded-br-lg shadow-md max-w-xl">
+                    <div class="user-bubble p-4 rounded-2xl rounded-br-lg shadow-md max-w-4xl">
                         ${text ? `<p>${escapeHtml(text)}</p>` : ''}
                         ${imageHTML}
                     </div>
@@ -891,7 +899,8 @@
 
         const addAstraMessageBubble = (index) => {
             const messageId = `msg-${crypto.randomUUID()}`;
-            const messageHTML = `<div id="${messageId}" class="flex items-start gap-3 mb-6 message-pop-in" data-message-index="${index}"><img src="${config.defaultAvatar}" class="w-10 h-10 rounded-xl flex-shrink-0"><div class="model-bubble p-4 rounded-2xl rounded-bl-lg shadow-md w-full max-w-xl"><p class="font-semibold mb-2">AstraNova</p><div class="markdown-content space-y-3"><div class="typing-indicator"><span></span><span></span><span></span></div></div></div></div>`;
+            // UPDATED: Increased max-width from xl to 4xl
+            const messageHTML = `<div id="${messageId}" class="flex items-start gap-3 mb-6 message-pop-in" data-message-index="${index}"><img src="${config.defaultAvatar}" class="w-10 h-10 rounded-xl flex-shrink-0"><div class="model-bubble p-4 rounded-2xl rounded-bl-lg shadow-md w-full max-w-4xl"><p class="font-semibold mb-2">AstraNova</p><div class="markdown-content space-y-3"><div class="typing-indicator"><span></span><span></span><span></span></div></div></div></div>`;
             DOMElements.chatWindow.innerHTML += messageHTML;
             scrollToBottom();
             const messageDiv = document.getElementById(messageId);
@@ -927,7 +936,8 @@
                 ? `<p class="font-semibold mb-2">Document Forge Output</p><p>Your document is ready.</p>${downloadButtonHTML}` 
                 : `<div class="relative"><p class="font-semibold mb-2">AstraNova</p>${actionButtonsHTML}<div class="markdown-content space-y-3">${content.data}</div></div>`;
             
-            const messageHTML = `<div id="${messageId}" class="flex items-start gap-3 mb-6 message-pop-in" data-message-index="${index}"><img src="${config.defaultAvatar}" class="w-10 h-10 rounded-xl flex-shrink-0"><div class="model-bubble p-4 rounded-2xl rounded-bl-lg shadow-md w-full max-w-xl">${innerHTML}</div></div>`;
+            // UPDATED: Increased max-width from xl to 4xl
+            const messageHTML = `<div id="${messageId}" class="flex items-start gap-3 mb-6 message-pop-in" data-message-index="${index}"><img src="${config.defaultAvatar}" class="w-10 h-10 rounded-xl flex-shrink-0"><div class="model-bubble p-4 rounded-2xl rounded-bl-lg shadow-md w-full max-w-4xl">${innerHTML}</div></div>`;
             DOMElements.chatWindow.innerHTML += messageHTML;
             const messageDiv = document.getElementById(messageId);
             if (content.type === 'text' || content.type === 'doc') {
