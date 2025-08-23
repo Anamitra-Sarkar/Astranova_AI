@@ -36,21 +36,20 @@ app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
 db = None
 if not firebase_admin._apps:
     try:
-    # Get the service account key from environment variable
-    service_account_key = os.environ.get('FIREBASE_SERVICE_ACCOUNT_KEY')
-    
-    if service_account_key:
-        # Parse the JSON key
-        service_account_info = json.loads(service_account_key)
-        cred = credentials.Certificate(service_account_info)
-        firebase_admin.initialize_app(cred)
-        db = firestore.client() # Initialize Firestore
-        logger.info("Firebase Admin initialized successfully.")
-    else:
-        logger.error("FIREBASE_SERVICE_ACCOUNT_KEY not found in environment variables.")
-except Exception as e:
-    logger.error(f"Firebase initialization failed: {e}")
-
+        # Get the service account key from environment variable
+        service_account_key = os.environ.get('FIREBASE_SERVICE_ACCOUNT_KEY')
+        
+        if service_account_key:
+            # Parse the JSON key
+            service_account_info = json.loads(service_account_key)
+            cred = credentials.Certificate(service_account_info)
+            firebase_admin.initialize_app(cred)
+            db = firestore.client() # Initialize Firestore
+            logger.info("Firebase Admin initialized successfully.")
+        else:
+            logger.error("FIREBASE_SERVICE_ACCOUNT_KEY not found in environment variables.")
+    except Exception as e:
+        logger.error(f"Firebase initialization failed: {e}")
 # --- Local File Setup ---
 if not os.path.exists('downloads'):
     os.makedirs('downloads')
