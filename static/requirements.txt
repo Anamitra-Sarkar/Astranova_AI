@@ -1,9 +1,1 @@
-Flask
-flask-cors
-gunicorn
-requests
-pillow
-fpdf
-python-pptx
-google-generativeai
-firebase-admin
+
