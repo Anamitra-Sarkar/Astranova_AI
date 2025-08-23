@@ -13,7 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:wght@400;500;600&family=Roboto+Mono:wght@400;500&family=Playfair+Display:wght@400;500;600&family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     
-    <!-- CORRECTED: Favicon link using url_for -->
+    <!-- Favicon link using url_for -->
     <link rel="icon" href="{{ url_for('static', filename='image.png') }}" type="image/png">
 
     <!-- Libraries for Markdown and Code Highlighting -->
@@ -21,7 +21,12 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css" id="hljs-theme">
 
-    <!-- Internal Styles (No changes needed here) -->
+    <!-- NEW: Firebase JS SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+
+
+    <!-- Internal Styles -->
     <style>
         :root {
             --bg-primary: #111827;
@@ -65,7 +70,6 @@
             --model-bubble-bg: #e5e7eb;
             --code-bg: #f3f4f6;
         }
-        /* ... rest of your styles are fine ... */
         body {  
             font-family: var(--font-family); 
             background-color: var(--bg-primary);
@@ -193,7 +197,7 @@
         <!-- Sidebar -->
         <aside id="sidebar" class="sidebar glass-effect w-64 p-4 flex-col flex fixed h-full z-40 transition-transform duration-300 ease-in-out">
             <button id="close-menu-btn" class="md:hidden absolute top-2 right-2 p-2 rounded-full hover:bg-gray-700/50"><i data-lucide="x" class="w-6 h-6"></i></button>
-            <!-- CORRECTED: Sidebar logo link -->
+            <!-- Sidebar logo link -->
             <div class="flex items-center mb-6 mt-8 md:mt-0"><img src="{{ url_for('static', filename='image.png') }}" alt="AstraNova Logo" class="w-8 h-8 rounded-lg mr-3"><h1 class="text-xl font-bold">AstraNova</h1></div>
             <button id="new-chat-btn" class="new-chat-btn flex items-center justify-center w-full text-white font-semibold py-2.5 px-4 rounded-lg">
                 <i data-lucide="plus" class="w-5 h-5 mr-2"></i>New Chat
@@ -248,7 +252,6 @@
 
         <!-- Main content area -->
         <main id="main-content" class="flex-1 flex flex-col" style="background-color: transparent;">
-            <!-- (The rest of your main content is fine) -->
             <header class="main-header glass-effect flex items-center justify-between p-2 md:p-4">
                 <div class="flex items-center flex-1 min-w-0">
                     <button id="menu-btn" class="mr-2 p-2 rounded-full" onmouseover="this.style.backgroundColor='var(--bg-tertiary)';" onmouseout="this.style.backgroundColor='transparent';"><i data-lucide="menu" class="w-6 h-6"></i></button>
@@ -308,7 +311,6 @@
         </main>
     </div>
 
-    <!-- (Modals are fine, no changes needed) -->
     <!-- Settings Modal -->
     <div id="settings-modal" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
         <div class="modal-content rounded-xl shadow-2xl w-full max-w-2xl p-6 message-pop-in max-h-[90vh] overflow-y-auto">
@@ -595,10 +597,25 @@
     </div>
 
     <script>
+        // --- NEW: Firebase Configuration ---
+        const firebaseConfig = {
+          apiKey: "AIzaSyDEAOr3iqU6TJZ6uztMvC5mquZECPcBkkE",
+          authDomain: "fir-config-d3c36.firebaseapp.com",
+          projectId: "fir-config-d3c36",
+          storageBucket: "fir-config-d3c36.firebasestorage.app",
+          messagingSenderId: "477435579926",
+          appId: "1:477435579926:web:d370e9fb5a3c5a05316f37"
+        };
+        
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const fbAuth = firebase.auth();
+
+
         // --- Configuration & State ---
         const config = { 
             backendUrl: window.location.origin, 
-            // --- CORRECTED: Default avatar path using url_for ---
+            // Default avatar path using url_for
             defaultAvatar: "{{ url_for('static', filename='image.png') }}",
             backgrounds: {
                 cars: 'https://www.motortrend.com/uploads/sites/11/2018/12/50-Years-of-IMSA-16.jpg',
@@ -609,7 +626,7 @@
                 snow: 'https://images.stockcake.com/public/3/1/2/31234741-3165-4925-b068-a0788f4def63_large/snowy-city-street-stockcake.jpg'
             }
         };
-        // (The rest of your JavaScript is fine, no changes needed from here)
+
         const DOMElements = {
             html: document.documentElement,
             body: document.body,
@@ -1077,43 +1094,16 @@
             isSpeaking = false;
         };
 
-        // --- Authentication Functions ---
+        // --- Authentication Functions (REVISED) ---
         const authAPI = {
-            async checkAuth() {
-                try {
-                    const response = await fetch(`${config.backendUrl}/auth/check`);
-                    return await response.json();
-                } catch (error) {
-                    console.error('Auth check failed:', error);
-                    return { authenticated: false };
-                }
+            async verifyToken(token) {
+                // This function is no longer needed as the backend check_auth handles session verification
+                // We keep the object structure for other API calls
             },
-
-            async login(email, password) {
-                const response = await fetch(`${config.backendUrl}/auth/login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
-                });
-                return await response.json();
-            },
-
-            async signup(email, password, username) {
-                const response = await fetch(`${config.backendUrl}/auth/signup`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password, username })
-                });
-                return await response.json();
-            },
-
             async logout() {
-                const response = await fetch(`${config.backendUrl}/auth/logout`, {
-                    method: 'POST'
-                });
+                const response = await fetch(`${config.backendUrl}/auth/logout`, { method: 'POST' });
                 return await response.json();
             },
-
             async migrateChats(chats) {
                 const response = await fetch(`${config.backendUrl}/chats/migrate`, {
                     method: 'POST',
@@ -1122,12 +1112,10 @@
                 });
                 return await response.json();
             },
-
             async getUserChats() {
                 const response = await fetch(`${config.backendUrl}/chats`);
                 return await response.json();
             },
-
             async saveUserChat(chatId, chatData) {
                 const response = await fetch(`${config.backendUrl}/chats/${chatId}`, {
                     method: 'PUT',
@@ -1138,18 +1126,25 @@
             }
         };
 
-        function updateAuthUI() {
-            if (state.isAuthenticated && state.currentUser) {
-                // Show logged in state
+        function updateAuthUI(user) {
+            if (user) {
+                state.isAuthenticated = true;
+                state.currentUser = {
+                    uid: user.uid,
+                    email: user.email,
+                    username: user.displayName || 'User',
+                    avatar_url: user.photoURL || config.defaultAvatar
+                };
+                
                 DOMElements.authLoggedOut.classList.add('hidden');
                 DOMElements.authLoggedIn.classList.remove('hidden');
                 
-                // Update user info
-                DOMElements.userAvatar.src = state.currentUser.avatar_url || '/static/default-avatar.png';
-                DOMElements.userName.textContent = state.currentUser.username || 'User';
-                DOMElements.userEmail.textContent = state.currentUser.email || '';
+                DOMElements.userAvatar.src = state.currentUser.avatar_url;
+                DOMElements.userName.textContent = state.currentUser.username;
+                DOMElements.userEmail.textContent = state.currentUser.email;
             } else {
-                // Show logged out state
+                state.isAuthenticated = false;
+                state.currentUser = null;
                 DOMElements.authLoggedOut.classList.remove('hidden');
                 DOMElements.authLoggedIn.classList.add('hidden');
             }
@@ -1157,8 +1152,7 @@
 
         function showError(elementId, message) {
             const errorEl = document.getElementById(elementId);
-            const messageEl = errorEl.querySelector('p');
-            messageEl.textContent = message;
+            errorEl.querySelector('p').textContent = message;
             errorEl.classList.remove('hidden');
         }
 
@@ -1172,111 +1166,74 @@
             const loaderEl = document.getElementById(loaderId);
             
             submitBtn.disabled = isLoading;
-            if (isLoading) {
-                textEl.classList.add('hidden');
-                loaderEl.classList.remove('hidden');
-            } else {
-                textEl.classList.remove('hidden');
-                loaderEl.classList.add('hidden');
-            }
+            textEl.classList.toggle('hidden', isLoading);
+            loaderEl.classList.toggle('hidden', !isLoading);
         }
 
         async function handleLogin(email, password) {
+            setLoading('login-submit-btn', 'login-submit-text', 'login-submit-loader', true);
+            hideError('login-error');
             try {
-                setLoading('login-submit-btn', 'login-submit-text', 'login-submit-loader', true);
-                hideError('login-error');
-                
-                const result = await authAPI.login(email, password);
-                
-                if (result.user) {
-                    state.isAuthenticated = true;
-                    state.currentUser = result.user;
-                    updateAuthUI();
-                    closeModal('login-modal');
-                    
-                    // Migrate localStorage chats if any exist
-                    await migrateChatData();
-                    
-                    showNotification('Welcome back! Successfully signed in.', 'success');
-                } else {
-                    showError('login-error', result.error || 'Login failed');
-                }
+                await fbAuth.signInWithEmailAndPassword(email, password);
+                // The onAuthStateChanged listener will handle the rest
             } catch (error) {
-                showError('login-error', 'Network error. Please try again.');
-                console.error('Login error:', error);
-            } finally {
+                showError('login-error', error.message);
                 setLoading('login-submit-btn', 'login-submit-text', 'login-submit-loader', false);
             }
         }
 
         async function handleSignup(email, password, username) {
+            setLoading('signup-submit-btn', 'signup-submit-text', 'signup-submit-loader', true);
+            hideError('signup-error');
             try {
-                setLoading('signup-submit-btn', 'signup-submit-text', 'signup-submit-loader', true);
-                hideError('signup-error');
-                
-                const result = await authAPI.signup(email, password, username);
-                
-                if (result.user) {
-                    state.isAuthenticated = true;
-                    state.currentUser = result.user;
-                    updateAuthUI();
-                    closeModal('signup-modal');
-                    
-                    // Migrate localStorage chats
-                    await migrateChatData();
-                    
-                    showNotification('Account created successfully! Welcome to AstraNova.', 'success');
-                } else {
-                    showError('signup-error', result.error || 'Signup failed');
-                }
+                const userCredential = await fbAuth.createUserWithEmailAndPassword(email, password);
+                await userCredential.user.updateProfile({ displayName: username });
+                // The onAuthStateChanged listener will handle the rest
             } catch (error) {
-                showError('signup-error', 'Network error. Please try again.');
-                console.error('Signup error:', error);
-            } finally {
+                showError('signup-error', error.message);
                 setLoading('signup-submit-btn', 'signup-submit-text', 'signup-submit-loader', false);
             }
         }
+        
+        async function handleGoogleSignIn() {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            try {
+                await fbAuth.signInWithPopup(provider);
+                // onAuthStateChanged will handle UI updates and backend session creation
+            } catch (error) {
+                showError('login-error', error.message);
+                showError('signup-error', error.message);
+                console.error("Google Sign-In error:", error);
+            }
+        }
+
 
         async function handleLogout() {
             try {
-                await authAPI.logout();
-                state.isAuthenticated = false;
-                state.currentUser = null;
-                updateAuthUI();
-                
-                // Clear current chat and reload from localStorage
-                state.chatHistory = [];
-                state.currentChatId = null;
-                loadLocalChats();
-                
-                showNotification('Successfully signed out.', 'info');
+                await fbAuth.signOut();
+                await authAPI.logout(); // Clear server session
+                // onAuthStateChanged will handle UI updates and reloading local chats
             } catch (error) {
                 console.error('Logout error:', error);
             }
         }
 
         async function migrateChatData() {
-            try {
-                const localChats = getSavedChats();
-                const chatKeys = Object.keys(localChats);
-                
-                if (chatKeys.length > 0 && !state.chatMigrationPending) {
-                    state.chatMigrationPending = true;
+            if (state.chatMigrationPending) return;
+            const localChats = getSavedChats();
+            if (Object.keys(localChats).length > 0) {
+                state.chatMigrationPending = true;
+                try {
                     const result = await authAPI.migrateChats(localChats);
-                    
                     if (result.migrated_count > 0) {
                         showNotification(`Migrated ${result.migrated_count} chat(s) to your account.`, 'success');
-                        // Clear localStorage after successful migration
                         localStorage.removeItem('astraNovaChats');
                     }
-                    
-                    // Load user chats
-                    await loadUserChats();
+                } catch (error) {
+                    console.error('Chat migration error:', error);
+                } finally {
                     state.chatMigrationPending = false;
                 }
-            } catch (error) {
-                console.error('Chat migration error:', error);
-                state.chatMigrationPending = false;
             }
         }
 
@@ -1284,8 +1241,7 @@
             try {
                 const result = await authAPI.getUserChats();
                 if (result.chats) {
-                    // Replace localStorage with user chats
-                    saveChats(result.chats);
+                    saveChats(result.chats); // Overwrite local storage with server data
                     updateUIForCurrentChat();
                 }
             } catch (error) {
@@ -1304,7 +1260,6 @@
         }
 
         function showNotification(message, type = 'info') {
-            // Create a simple notification (you can enhance this)
             const notification = document.createElement('div');
             notification.className = `fixed top-4 right-4 z-[100] p-4 rounded-lg shadow-lg message-pop-in max-w-sm`;
             
@@ -1436,23 +1391,20 @@
             }
             
             const chatData = {
-                title: title || 'New Chat',
-                messages: state.chatHistory,
+                title: title || DOMElements.chatTitle.textContent || 'New Chat',
+                history: state.chatHistory,
                 customInstruction: state.customInstruction,
                 model: state.selectedModel
             };
             
-            // For authenticated users, save to server
             if (state.isAuthenticated) {
                 try {
                     await authAPI.saveUserChat(state.currentChatId, chatData);
                 } catch (error) {
-                    console.error("Failed to save chat to server:", error);
-                    // Fall back to localStorage
+                    console.error("Failed to save chat to server, saving locally:", error);
                     saveChatLocally(chatData);
                 }
             } else {
-                // For non-authenticated users, save to localStorage
                 saveChatLocally(chatData);
             }
             
@@ -1465,7 +1417,7 @@
             chats[state.currentChatId] = {
                 ...existingChat,
                 title: chatData.title || existingChat.title || 'New Chat',
-                history: chatData.messages,
+                history: chatData.history,
                 timestamp: Date.now(),
                 customInstruction: chatData.customInstruction,
                 model: chatData.model
@@ -1749,7 +1701,7 @@
                 }
             });
 
-            // Authentication event listeners
+            // --- Authentication event listeners (REVISED) ---
             DOMElements.loginBtn.addEventListener('click', () => openModal('login-modal'));
             DOMElements.signupBtn.addEventListener('click', () => openModal('signup-modal'));
             DOMElements.logoutBtn.addEventListener('click', handleLogout);
@@ -1800,13 +1752,9 @@
                 }
             });
             
-            DOMElements.googleLoginBtn.addEventListener('click', () => {
-                window.location.href = `${config.backendUrl}/auth/google`;
-            });
-            
-            DOMElements.googleSignupBtn.addEventListener('click', () => {
-                window.location.href = `${config.backendUrl}/auth/google`;
-            });
+            // REVISED: Google Sign-In buttons
+            DOMElements.googleLoginBtn.addEventListener('click', handleGoogleSignIn);
+            DOMElements.googleSignupBtn.addEventListener('click', handleGoogleSignIn);
             
             // Close modals when clicking outside
             DOMElements.loginModal.addEventListener('click', (e) => {
@@ -1817,42 +1765,48 @@
                 if (e.target === DOMElements.signupModal) closeModal('signup-modal');
             });
 
-            // Initialize authentication state
+            // Initialize authentication state listener
             initAuth();
 
-            const chats = getSavedChats();
-            const lastChatId = Object.keys(chats).sort((a, b) => (chats[b].timestamp || 0) - (chats[a].timestamp || 0))[0];
-            if (lastChatId) {
-                loadChat(lastChatId);
-            } else {
-                updateUIForModel('chat');
-                startNewChat();
-            }
             lucide.createIcons();
         };
         
-        // Initialize authentication
-        async function initAuth() {
-            try {
-                const authResult = await authAPI.checkAuth();
-                if (authResult.authenticated && authResult.user) {
-                    state.isAuthenticated = true;
-                    state.currentUser = authResult.user;
-                    updateAuthUI();
+        // --- Initialize authentication (REVISED) ---
+        function initAuth() {
+            fbAuth.onAuthStateChanged(async (user) => {
+                if (user) {
+                    // User is signed in.
+                    updateAuthUI(user);
+                    closeModal('login-modal');
+                    closeModal('signup-modal');
+                    setLoading('login-submit-btn', 'login-submit-text', 'login-submit-loader', false);
+                    setLoading('signup-submit-btn', 'signup-submit-text', 'signup-submit-loader', false);
+
+                    // Create a server session by sending the token
+                    // This is a simplified approach. In production, you'd handle token refreshes.
+                    try {
+                        const idToken = await user.getIdToken();
+                        // This fetch call establishes the server-side session
+                        await fetch(`${config.backendUrl}/auth/firebase`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ token: idToken })
+                        });
+                    } catch (error) {
+                        console.error("Could not verify token with backend:", error);
+                    }
                     
-                    // Load user chats if authenticated
+                    await migrateChatData();
                     await loadUserChats();
+                    showNotification('Successfully signed in.', 'success');
                 } else {
-                    state.isAuthenticated = false;
-                    state.currentUser = null;
-                    updateAuthUI();
+                    // User is signed out.
+                    updateAuthUI(null);
+                    state.chatHistory = [];
+                    state.currentChatId = null;
+                    loadLocalChats(); // Load chats from localStorage for guests
                 }
-            } catch (error) {
-                console.error('Auth initialization failed:', error);
-                state.isAuthenticated = false;
-                state.currentUser = null;
-                updateAuthUI();
-            }
+            });
         }
         
         initialize();
