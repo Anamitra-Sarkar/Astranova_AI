@@ -30,21 +30,20 @@ logger = logging.getLogger('AstraNovaServer')
 # Basic Configuration
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', secrets.token_hex(32))
 
-# Firebase Admin Setup
+# Firebase Admin Setup - SIMPLIFIED VERSION
 if not firebase_admin._apps:
     try:
-        cred = credentials.Certificate({
-            "type": "service_account",
-            "project_id": os.environ.get('FIREBASE_PROJECT_ID'),
-            "private_key_id": os.environ.get('FIREBASE_PRIVATE_KEY_ID'),
-            "private_key": os.environ.get('FIREBASE_PRIVATE_KEY', '').replace('\\n', '\n'),
-            "client_email": os.environ.get('FIREBASE_CLIENT_EMAIL'),
-            "client_id": os.environ.get('FIREBASE_CLIENT_ID'),
-            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-            "token_uri": "https://oauth2.googleapis.com/token",
-        })
-        firebase_admin.initialize_app(cred)
-        logger.info("Firebase Admin initialized successfully")
+        # Get the service account key from environment variable
+        service_account_key = os.environ.get('FIREBASE_SERVICE_ACCOUNT_KEY')
+        
+        if service_account_key:
+            # Parse the JSON key
+            service_account_info = json.loads(service_account_key)
+            cred = credentials.Certificate(service_account_info)
+            firebase_admin.initialize_app(cred)
+            logger.info("Firebase Admin initialized successfully with service account key")
+        else:
+            logger.error("FIREBASE_SERVICE_ACCOUNT_KEY not found in environment variables")
     except Exception as e:
         logger.error(f"Firebase initialization failed: {e}")
 
@@ -275,7 +274,8 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# All your existing API routes remain the same
+# ===== MAIN API ROUTES =====
+
 @app.route('/chat-stream', methods=['POST'])
 def chat_stream():
     if not GEMINI_API_KEY:
@@ -321,7 +321,7 @@ def chat_stream():
         chat_history_for_model = history[:-1]
         model_to_use = default_streaming_model
         if custom_instruction:
-            model_to_use = genai.GenerativeModel('gemini-2.5-pro', system_instruction=custom_instruction)
+            model_to_use = genai.GenerativeModel('gemini-1.5-pro-latest', system_instruction=custom_instruction)
 
         def generate():
             chat_session = model_to_use.start_chat(history=chat_history_for_model)
@@ -333,9 +333,6 @@ def chat_stream():
     except Exception as e:
         logger.error(f"Streaming chat error: {e}", exc_info=True)
         return format_error("A quantum fluctuation disrupted the stream.", 500)
-
-# [Include all your other existing routes: generate_doc, generate_theme, download_file, 
-# summarize_chat, generate_image, generate_title exactly as they are in your current main.py]
 
 @app.route('/generate-doc', methods=['POST'])
 def generate_doc():
@@ -377,7 +374,7 @@ def generate_doc():
             try:
                 logger.info("Generating cover image for presentation...")
                 image_prompt = f"An abstract, visually appealing background image related to the concept of '{prompt}'. Minimalist, professional, with a blue and gold color palette."
-                api_url = f"https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-ultra-generate-001:predict?key={GEMINI_API_KEY}"
+                api_url = f"https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key={GEMINI_API_KEY}"
                 payload = {"instances": [{"prompt": image_prompt}], "parameters": {"sampleCount": 1}}
                 headers = {'Content-Type': 'application/json'}
                 api_response = requests.post(api_url, headers=headers, json=payload)
@@ -425,7 +422,7 @@ def generate_theme():
 
         logger.info(f"Generating theme with prompt: '{prompt}'")
 
-        api_url = f"https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-ultra-generate-001:predict?key={GEMINI_API_KEY}"
+        api_url = f"https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key={GEMINI_API_KEY}"
         full_prompt = f"A beautiful, high-resolution, scenic background image of: {prompt}. Widescreen 16:9, cinematic, desktop wallpaper, 4k."
         payload = {"instances": [{"prompt": full_prompt}], "parameters": {"sampleCount": 1}}
         headers = {'Content-Type': 'application/json'}
@@ -448,7 +445,8 @@ def download_file(filename):
 
 @app.route('/summarize', methods=['POST'])
 def summarize_chat():
-    if not GEMINI_API_KEY: return format_error("Summarization is offline.", 503)
+    if not GEMINI_API_KEY: 
+        return format_error("Summarization is offline.", 503)
     try:
         data = request.get_json()
         history = data.get('history', [])
@@ -456,12 +454,17 @@ def summarize_chat():
         for turn in history:
             role = "Observer" if turn['role'] == 'model' else "Interlocutor"
             text_parts = [part['text'] for part in turn['parts'] if 'text' in part]
-            if text_parts: transcript += f"{role}: {' '.join(text_parts)}\n\n"
+            if text_parts: 
+                transcript += f"{role}: {' '.join(text_parts)}\n\n"
+        
         summary_prompt = f"As AstraNova, poetically and analytically summarize this dialogue:\n\n---\n{transcript}---\n"
+        
         def generate_summary():
             response_stream = default_streaming_model.generate_content([summary_prompt], stream=True)
             for chunk in response_stream:
-                if chunk.text: yield chunk.text
+                if chunk.text: 
+                    yield chunk.text
+        
         return Response(generate_summary(), mimetype='text/plain')
     except Exception as e:
         logger.error(f"Summarization error: {e}", exc_info=True)
@@ -469,19 +472,24 @@ def summarize_chat():
 
 @app.route('/generate-image', methods=['POST'])
 def generate_image():
-    if not GEMINI_API_KEY: return format_error("Image generation is offline: GOOGLE_API_KEY is not configured.", 503)
+    if not GEMINI_API_KEY: 
+        return format_error("Image generation is offline: GOOGLE_API_KEY is not configured.", 503)
     try:
         data = request.get_json()
         prompt = data.get('prompt')
-        if not prompt: raise ValueError("Prompt is required")
+        if not prompt: 
+            raise ValueError("Prompt is required")
+        
         api_url = f"https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key={GEMINI_API_KEY}"
         payload = {"instances": [{"prompt": prompt}], "parameters": {"sampleCount": 1}}
         headers = {'Content-Type': 'application/json'}
         api_response = requests.post(api_url, headers=headers, json=payload)
         api_response.raise_for_status()
+        
         result = api_response.json()
         if result.get("predictions") and result["predictions"][0].get("bytesBase64Encoded"):
             return jsonify({'success': True, 'image_b64': result["predictions"][0]["bytesBase64Encoded"]})
+        
         raise Exception("No image data in response")
     except Exception as e:
         logger.error(f"Image generation error: {e}", exc_info=True)
@@ -491,7 +499,10 @@ def generate_image():
 def generate_title():
     try:
         data = request.get_json()
-        prompt = data['message']
+        prompt = data.get('message', '')
+        if not prompt:
+            return format_error("Message is required for title generation.", 400)
+        
         response = title_model.generate_content(prompt)
         title_data = json.loads(response.text)
         return jsonify({'success': True, 'title': title_data.get('title', 'New Chat')[:50]})
@@ -499,11 +510,28 @@ def generate_title():
         logger.error(f"Title generation error: {e}", exc_info=True)
         return format_error("Could not generate title.", 500)
 
+# ===== STATIC ROUTES =====
+
+@app.route('/login')
+def login_page():
+    """Renders the Firebase login page."""
+    return render_template('login.html')
+
 @app.route('/')
 def index():
     """Renders the main HTML page."""
     return render_template('index.html')
 
+# ===== ERROR HANDLERS =====
+
+@app.errorhandler(404)
+def not_found(error):
+    return jsonify({'error': 'Endpoint not found', 'status': 'error'}), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    return jsonify({'error': 'Internal server error', 'status': 'error'}), 500
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
-    app.run(host='0.0.0.0', port=port, threaded=True)
+    app.run(host='0.0.0.0', port=port, threaded=True, debug=False)
