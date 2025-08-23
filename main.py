@@ -50,6 +50,8 @@ if not firebase_admin._apps:
             logger.error("FIREBASE_SERVICE_ACCOUNT_KEY not found in environment variables.")
     except Exception as e:
         logger.error(f"Firebase initialization failed: {e}")
+
+
 # --- Local File Setup ---
 if not os.path.exists('downloads'):
     os.makedirs('downloads')
@@ -246,6 +248,22 @@ def save_user_chat(chat_id):
         logger.error(f"Error saving chat {chat_id}: {e}")
         return format_error("Could not save chat.", 500)
 
+# NEW: Route to handle deleting a chat from the database
+@app.route('/chats/<chat_id>', methods=['DELETE'])
+def delete_user_chat(chat_id):
+    if 'uid' not in session:
+        return format_error("Authentication required.", 401)
+    if not db:
+        return format_error("Database service is offline.", 503)
+    try:
+        uid = session['uid']
+        db.collection('users').document(uid).collection('chats').document(chat_id).delete()
+        logger.info(f"Deleted chat {chat_id} for user {uid}")
+        return jsonify({'success': True, 'message': f'Chat {chat_id} deleted.'})
+    except Exception as e:
+        logger.error(f"Error deleting chat {chat_id}: {e}")
+        return format_error("Could not delete chat.", 500)
+
 @app.route('/chats/migrate', methods=['POST'])
 def migrate_chats():
     if 'uid' not in session:
@@ -328,14 +346,25 @@ def generate_image():
         api_url = f"https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key={GEMINI_API_KEY}"
         payload = {"instances": [{"prompt": prompt}], "parameters": {"sampleCount": 1}}
         api_response = requests.post(api_url, json=payload)
-        api_response.raise_for_status()
+        
+        api_response.raise_for_status() 
+        
         result = api_response.json()
         if result.get("predictions") and result["predictions"][0].get("bytesBase64Encoded"):
             return jsonify({'success': True, 'image_b64': result["predictions"][0]["bytesBase64Encoded"]})
-        raise Exception("No image data in response")
+        
+        raise Exception("No image data in successful API response.")
+    except requests.exceptions.HTTPError as e:
+        try:
+            error_details = e.response.json().get('error', {}).get('message', str(e))
+        except json.JSONDecodeError:
+            error_details = str(e)
+            
+        logger.error(f"HTTP Error during image generation: {error_details}", exc_info=True)
+        return format_error(f"API Error: {error_details}", 500)
     except Exception as e:
-        logger.error(f"Image generation error: {e}", exc_info=True)
-        return format_error("The stellar forge malfunctioned.", 500)
+        logger.error(f"Generic image generation error: {e}", exc_info=True)
+        return format_error("The stellar forge malfunctioned. Check server logs for details.", 500)
 
 @app.route('/generate-doc', methods=['POST'])
 def generate_doc():
