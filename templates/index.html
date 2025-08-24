@@ -101,14 +101,13 @@
         .model-bubble { background-color: var(--model-bubble-bg); color: var(--text-primary); }
         .recent-chat-item.active-chat { background-color: var(--bg-tertiary); }
         
-        /* UPDATED: Added max-height and overflow to make code blocks scrollable */
         .markdown-content pre { 
             background-color: var(--code-bg); 
             border: 1px solid var(--border-color); 
             position: relative; 
             padding-top: 2.5rem;
-            max-height: 400px; /* Limit the height */
-            overflow: auto; /* Add scrollbars when content overflows */
+            max-height: 400px;
+            overflow: auto;
         }
 
         .markdown-content pre .copy-code-btn { position: absolute; top: 0.5rem; right: 0.5rem; color: var(--text-muted); background: none; border: none; cursor: pointer; }
@@ -1547,7 +1546,26 @@
             }
         }
 
-        function startNewChat() { stopSpeech(); state.currentChatId = null; state.chatHistory = []; state.customInstruction = ''; DOMElements.customInstructionInput.value = ''; removeAttachedImage(); updateUIForModel(state.selectedModel); const msg = state.selectedModel === 'chat' ? 'Salutations... A new communication channel is open.' : state.selectedModel === 'image' ? 'The stellar forge is active. Describe the cosmos you wish to render.' : 'The document forge is ready. Describe the document you wish to create.'; DOMElements.chatWindow.innerHTML = `<div class="flex items-start gap-3 mb-6 message-pop-in"><img src="${config.defaultAvatar}" class="w-10 h-10 rounded-xl"><div class="model-bubble p-4 rounded-2xl rounded-bl-lg w-full"><p class="font-semibold mb-2">AstraNova</p><p>${msg}</p></div></div>`; updateUIForCurrentChat(); if (window.innerWidth < 768) applySidebarState(true); }
+        // UPDATED: startNewChat to save the new chat immediately
+        function startNewChat() { 
+            stopSpeech(); 
+            state.currentChatId = null; 
+            state.chatHistory = []; 
+            state.customInstruction = ''; 
+            DOMElements.customInstructionInput.value = ''; 
+            removeAttachedImage(); 
+            updateUIForModel(state.selectedModel); 
+            const msg = state.selectedModel === 'chat' ? 'Salutations... A new communication channel is open.' : state.selectedModel === 'image' ? 'The stellar forge is active. Describe the cosmos you wish to render.' : 'The document forge is ready. Describe the document you wish to create.'; 
+            DOMElements.chatWindow.innerHTML = `<div class="flex items-start gap-3 mb-6 message-pop-in"><img src="${config.defaultAvatar}" class="w-10 h-10 rounded-xl"><div class="model-bubble p-4 rounded-2xl rounded-bl-lg w-full"><p class="font-semibold mb-2">AstraNova</p><p>${msg}</p></div></div>`; 
+            
+            // Save the new, empty chat so it appears in the sidebar
+            saveCurrentChat("New Chat");
+
+            updateUIForCurrentChat(); 
+            if (window.innerWidth < 768) {
+                applySidebarState(true);
+            }
+        }
         
         function updateUIForModel(model) {
             state.selectedModel = model;
