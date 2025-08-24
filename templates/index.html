@@ -92,7 +92,6 @@
         .chat-input-area { background-color: var(--bg-primary); border-top: 1px solid var(--border-color); }
         .chat-input { background-color: var(--bg-tertiary); color: var(--text-primary); }
         
-        /* UPDATED: Added max-height and overflow-y for scrollable input */
         #chat-input {
             max-height: 200px;
             overflow-y: auto;
@@ -101,7 +100,17 @@
         .user-bubble { background: var(--user-bubble-bg); color: white; }
         .model-bubble { background-color: var(--model-bubble-bg); color: var(--text-primary); }
         .recent-chat-item.active-chat { background-color: var(--bg-tertiary); }
-        .markdown-content pre { background-color: var(--code-bg); border: 1px solid var(--border-color); position: relative; padding-top: 2.5rem; }
+        
+        /* UPDATED: Added max-height and overflow to make code blocks scrollable */
+        .markdown-content pre { 
+            background-color: var(--code-bg); 
+            border: 1px solid var(--border-color); 
+            position: relative; 
+            padding-top: 2.5rem;
+            max-height: 400px; /* Limit the height */
+            overflow: auto; /* Add scrollbars when content overflows */
+        }
+
         .markdown-content pre .copy-code-btn { position: absolute; top: 0.5rem; right: 0.5rem; color: var(--text-muted); background: none; border: none; cursor: pointer; }
         .markdown-content code:not(pre code) { background-color: var(--bg-tertiary); padding: 0.2rem 0.4rem; border-radius: 0.25rem; font-size: 0.9em; }
         .markdown-content a {
@@ -320,7 +329,8 @@
         </main>
     </div>
 
-    <!-- Settings Modal -->
+    <!-- Modals (No changes needed below this line) -->
+    <!-- ... (rest of the modals are the same) ... -->
     <div id="settings-modal" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
         <div class="modal-content rounded-xl shadow-2xl w-full max-w-2xl p-6 message-pop-in max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center mb-4">
@@ -442,7 +452,7 @@
         </div>
     </div>
 
-    <!-- Custom Confirmation Modal -->
+    <!-- ... (rest of the modals and script tag are the same) ... -->
     <div id="confirmation-modal" class="fixed inset-0 bg-black/60 z-[60] hidden items-center justify-center p-4">
         <div class="modal-content rounded-xl shadow-2xl w-full max-w-sm p-6 message-pop-in text-center">
             <div class="flex justify-center mb-4">
@@ -458,9 +468,6 @@
             </div>
         </div>
     </div>
-    
-    <!-- Authentication Modals -->
-    <!-- Login Modal -->
     <div id="login-modal" class="fixed inset-0 bg-black/60 z-[60] hidden items-center justify-center p-4">
         <div class="modal-content rounded-xl shadow-2xl w-full max-w-md p-6 message-pop-in">
             <div class="flex justify-between items-center mb-6">
@@ -520,8 +527,6 @@
             </p>
         </div>
     </div>
-    
-    <!-- Signup Modal -->
     <div id="signup-modal" class="fixed inset-0 bg-black/60 z-[60] hidden items-center justify-center p-4">
         <div class="modal-content rounded-xl shadow-2xl w-full max-w-md p-6 message-pop-in">
             <div class="flex justify-between items-center mb-6">
@@ -591,8 +596,6 @@
             </p>
         </div>
     </div>
-    
-    <!-- Fullscreen Image Viewer -->
     <div id="fullscreen-image-viewer" class="fixed inset-0 z-[70] hidden items-center justify-center p-4">
         <div class="absolute top-4 right-4 flex space-x-2">
             <a id="fullscreen-download-btn" href="#" download="astranova-image.png" class="p-2 rounded-full bg-black/50 text-white hover:bg-black/75">
