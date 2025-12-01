@@ -83,11 +83,11 @@ else:
         7.  **Formatting:** Use GitHub Flavored Markdown. For code, use [CODE:language]...[/CODE] tags.
         """
         default_streaming_model = genai.GenerativeModel(
-            'gemini-1.5-pro-latest',
+            'gemini-2.0-flash',
             system_instruction=ASTRA_SYSTEM_INSTRUCTION_STREAMING
         )
         title_model = genai.GenerativeModel(
-            'gemini-1.5-flash-latest',
+            'gemini-2.0-flash',
             system_instruction='You are the title-generation module for AstraNova, an AI. Create a concise, poetic, and intriguing title (3-5 words max) for the user\'s query. Your response MUST be in this exact JSON format: {"title": "Your Generated Title"}.',
             generation_config=genai.types.GenerationConfig(response_mime_type="application/json")
         )
@@ -322,7 +322,7 @@ def chat_stream():
                         message_parts[i] = augmented_prompt
                         break
         
-        model_to_use = genai.GenerativeModel('gemini-2.5-pro', system_instruction=custom_instruction) if custom_instruction else default_streaming_model
+        model_to_use = genai.GenerativeModel('gemini-2.0-flash', system_instruction=custom_instruction) if custom_instruction else default_streaming_model
         
         def generate():
             chat_session = model_to_use.start_chat(history=history[:-1])
