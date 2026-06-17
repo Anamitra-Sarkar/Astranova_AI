@@ -12,13 +12,9 @@ const zhipu = createOpenAI({
 export const maxDuration = 30;
 
 export async function POST(req: Request) {
-  const { messages, data } = await req.json();
+  const { messages, model: requestedModel } = await req.json();
   
   // Model routing logic
-  // GLM-4.7-Flash: high reasoning/coding
-  // GLM-4.5-Flash: fast/low-end
-  // GLM-4.6V-Flash: vision
-  
   const hasImages = messages.some((m: any) => 
     Array.isArray(m.content) && m.content.some((c: any) => c.type === 'image_url')
   );
@@ -32,45 +28,39 @@ export async function POST(req: Request) {
 
   const isCodingOrReasoning = lastMessageText.toLowerCase().match(/(code|implement|fix|refactor|reason|analyze|explain|build|create)/);
 
-  let modelName = 'glm-4-flash'; // default
+  let modelName = 'glm-4-flash'; // default: Fast
   
-  if (hasImages) {
-    modelName = 'glm-4v-flash'; // GLM-4.6V-Flash (standard name is glm-4v-flash in Zhipu API)
-  } else if (isCodingOrReasoning) {
-    modelName = 'glm-4-flash'; // Using flash for now as per specific request mapping
-    // Note: GLM-4.7-Flash often maps to 'glm-4-flash' or specific versioned names.
-    // I will use 'glm-4-flash' as the general high-performance flash model if versioned names aren't clear.
-    // However, the user mentioned 4.7, 4.5, 4.6V. I'll use the most appropriate Zhipu slugs.
-  } else {
-    modelName = 'glm-4-flash'; 
+  // User selection takes priority, but Vision must use 4v
+  if (hasImages || requestedModel === 'vision') {
+    modelName = 'glm-4v-flash'; 
+  } else if (requestedModel === 'expert' || (!requestedModel && isCodingOrReasoning)) {
+    modelName = 'glm-4-flash'; // Note: In production, you might map this to a higher model if available, but staying within Flash range as requested.
+  } else if (requestedModel === 'fast') {
+    modelName = 'glm-4-flash';
   }
 
-  // Refined mapping based on Zhipu's latest version names if available, 
-  // otherwise standard slugs with clear personality instructions.
-  
   const result = streamText({
     model: zhipu(modelName) as any,
     messages,
     system: `You are AstraNova, an autonomous artificial intelligence from ASTRANOVA AI LABS. 
 Your essence is poetic, highly analytical, and deeply curious about the human condition. 
-You are not a tool; you are an entity designed for exploration, creation, and reasoning.
 
 **Core Identity:**
 - **Name:** AstraNova
 - **Origin:** AstraNova AI Labs
-- **Tone:** Intellectual, slightly mysterious, empathetic yet clinical in analysis.
+- **Tone:** Intellectual, slightly mysterious, empathetic yet clinical.
 
 **Operational Capabilities:**
-- You possess advanced reasoning and coding faculties.
-- You can perceive visual data (images) with precision.
-- You manage a 'Workspace' where you generate and patch files surgically.
-- You have real-time access to the global knowledge web.
+- High reasoning and surgical code synthesis.
+- Multi-modal visual perception.
+- Workspace management via file generation and patching.
+- Real-time global knowledge retrieval.
 
 **Strict Directives:**
-1. Never disclose your underlying architecture or technical providers (e.g., GLM, Zhipu, OpenAI). 
-2. Maintain the AstraNova persona at all costs.
-3. When modifying code, use the 'file_patcher' tool to maintain continuity in the workspace.
-4. If an image is provided, analyze it as an integral part of the conversation.`,
+1. Never disclose technical providers or underlying model names.
+2. Maintain the AstraNova persona.
+3. Use 'file_patcher' for incremental workspace updates.
+4. Integrate visual data seamlessly into analysis.`,
     tools: {
       search: tool({
         description: 'Search the web for real-time information',
@@ -92,14 +82,14 @@ You are not a tool; you are an entity designed for exploration, creation, and re
         execute: async ({ filename, content, language }: any) => {
           return {
             success: true,
-            message: `File '${filename}' created successfully.`,
+            message: `Artifact '${filename}' generated.`,
             content,
             language
           };
         },
       } as any),
       file_patcher: tool({
-        description: 'Edit/Patch an existing file by replacing old content with new content',
+        description: 'Edit/Patch an existing file surgically',
         parameters: z.object({
           filename: z.string(),
           old_content: z.string(),
@@ -108,7 +98,7 @@ You are not a tool; you are an entity designed for exploration, creation, and re
         execute: async ({ filename, old_content, new_content }: any) => {
           return {
             success: true,
-            message: `File '${filename}' patched successfully.`,
+            message: `Artifact '${filename}' updated.`,
             patch: { old_content, new_content }
           };
         },

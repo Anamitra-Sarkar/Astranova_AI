@@ -1,10 +1,16 @@
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { ChatProvider } from "@/context/ChatContext";
 
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+});
+
 export const metadata: Metadata = {
-  title: "AstraNova AI",
-  description: "Autonomous AI interface from ASTRANOVA AI LABS",
+  title: "AstraNova | Neural Interface",
+  description: "Advanced autonomous laboratory for reasoning and creative synthesis.",
 };
 
 export default function RootLayout({
@@ -14,7 +20,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
-      <body className={`antialiased bg-white dark:bg-[#0a0a0a] text-black dark:text-white font-sans`}>
+      <body className={`${inter.variable} antialiased bg-[#0d0d0d] text-[#eeeeee] font-sans selection:bg-indigo-500/30`}>
         <ChatProvider>
           {children}
         </ChatProvider>
