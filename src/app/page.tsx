@@ -1,22 +1,21 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, Suspense, useCallback } from 'react';
 import { Sidebar } from '@/components/Sidebar';
 import { ChatWindow } from '@/components/ChatWindow';
 import { InputArea } from '@/components/InputArea';
 import { useChat } from '@/context/ChatContext';
 import { useChat as useVercelChat } from '@ai-sdk/react';
 import { v4 as uuidv4 } from 'uuid';
-import { FolderCode, ChevronDown, FileText, Share2, Check, LayoutGrid, Sparkles } from 'lucide-react';
+import { FolderCode, FileText, Share2, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { ModelSelector, ModelType } from '@/components/ModelSelector';
 import { motion, AnimatePresence } from 'framer-motion';
 
 function ChatInterface() {
-  const { currentChat, setCurrentChat, saveChat, user, shareChat, chats } = useChat();
+  const { currentChat, setCurrentChat, saveChat, shareChat, chats } = useChat();
   const searchParams = useSearchParams();
-  const router = useRouter();
   
   const [showFiles, setShowFiles] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
@@ -31,7 +30,17 @@ function ChatInterface() {
     }
   }, [searchParams, chats, setCurrentChat]);
 
-  const chatHelpers: any = useVercelChat({
+  const { 
+    messages, 
+    input, 
+    handleInputChange, 
+    handleSubmit, 
+    setMessages, 
+    isLoading, 
+    append,
+    reload,
+    stop
+  }: any = useVercelChat({
     api: '/api/chat',
     body: { model: selectedModel },
     initialMessages: currentChat?.history.map(m => ({
@@ -58,7 +67,7 @@ function ChatInterface() {
         }
       });
 
-      const updatedHistory = [...chatHelpers.messages, message].map(m => ({
+      const updatedHistory = [...messages, message].map(m => ({
         role: m.role as any,
         content: m.content,
         id: m.id,
@@ -77,7 +86,7 @@ function ChatInterface() {
         try {
           const response = await fetch('/api/title', {
             method: 'POST',
-            body: JSON.stringify({ message: chatHelpers.messages[0]?.content || '' })
+            body: JSON.stringify({ message: messages[0]?.content || '' })
           });
           const data = await response.json();
           title = data.title || title;
@@ -96,9 +105,6 @@ function ChatInterface() {
     }
   } as any);
 
-
-  const { messages, input, handleInputChange, handleSubmit, setMessages, isLoading, append } = chatHelpers;
-
   useEffect(() => {
     if (currentChat) {
       setMessages(currentChat.history.map(m => ({
@@ -112,7 +118,7 @@ function ChatInterface() {
     }
   }, [currentChat, setMessages]);
 
-  const handleSend = (content: string, image?: string) => {
+  const handleSend = useCallback((content: string, image?: string) => {
     if (image) {
       append({
         role: 'user',
@@ -127,7 +133,7 @@ function ChatInterface() {
         content: content
       });
     }
-  };
+  }, [append]);
 
   const handleShare = async () => {
     if (!currentChat) return;
@@ -143,21 +149,17 @@ function ChatInterface() {
   };
 
   return (
-    <div className="flex h-screen w-full bg-[#0d0d0d] overflow-hidden text-[#eeeeee]">
+    <div className="flex h-screen w-full bg-background overflow-hidden text-foreground selection:bg-indigo-500/10">
       <Sidebar />
-      <main className="flex-1 flex flex-col relative border-l border-white/5">
-        <header className="h-16 border-b border-white/5 flex items-center justify-between px-6 bg-[#0d0d0d]/80 backdrop-blur-xl z-10">
-          <div className="flex items-center gap-4">
+      <main className="flex-1 flex flex-col relative overflow-hidden">
+        <header className="h-16 border-b border-border flex items-center justify-between px-8 bg-background/50 backdrop-blur-md z-10">
+          <div className="flex items-center gap-6">
              <div className="flex flex-col">
-               <h2 className="text-sm font-bold tracking-tight truncate max-w-[200px]">
-                 {currentChat?.title || 'New Session'}
+               <h2 className="text-sm font-bold tracking-tight truncate max-w-[250px]">
+                 {currentChat?.title || 'Initial Session'}
                </h2>
-               <div className="flex items-center gap-1.5 mt-0.5">
-                  <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
-                  <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Interface Active</span>
-               </div>
              </div>
-             <div className="h-4 w-[1px] bg-white/10 mx-2" />
+             <div className="h-4 w-[1px] bg-border mx-1" />
              <ModelSelector selectedModel={selectedModel} onModelChange={setSelectedModel} />
           </div>
 
@@ -167,8 +169,8 @@ function ChatInterface() {
                  <button 
                   onClick={() => setShowFiles(!showFiles)}
                   className={cn(
-                    "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border border-white/5",
-                    showFiles ? "bg-white/10 text-white" : "text-gray-500 hover:text-gray-300"
+                    "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-smooth border",
+                    showFiles ? "bg-accent border-border text-foreground" : "bg-background border-border text-muted-foreground hover:bg-muted"
                   )}
                  >
                    <FolderCode size={14} />
@@ -180,17 +182,17 @@ function ChatInterface() {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: 10 }}
-                      className="absolute top-full right-0 mt-2 w-72 bg-[#161616] border border-white/10 rounded-xl shadow-2xl z-50 p-2 overflow-hidden"
+                      className="absolute top-full right-0 mt-2 w-80 bg-background border border-border rounded-xl shadow-2xl z-50 p-2 overflow-hidden"
                      >
-                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] p-3 border-b border-white/5 mb-2">Artifacts</p>
-                        <div className="max-h-64 overflow-y-auto custom-scrollbar">
+                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] p-3 border-b border-border mb-2 text-center">Active Artifacts</p>
+                        <div className="max-h-80 overflow-y-auto custom-scrollbar">
                           {Object.entries(currentChat.files).map(([filename, file]) => (
-                            <div key={filename} className="flex items-center justify-between p-2.5 hover:bg-white/5 rounded-lg cursor-pointer group transition-standard">
+                            <div key={filename} className="flex items-center justify-between p-3 hover:bg-muted rounded-lg cursor-pointer group transition-smooth border border-transparent hover:border-border/50">
                               <div className="flex items-center gap-3 overflow-hidden">
-                                <FileText size={16} className="text-indigo-400 opacity-60" />
+                                <FileText size={16} className="text-primary opacity-60" />
                                 <div className="flex flex-col overflow-hidden">
-                                  <span className="text-xs font-medium truncate text-gray-300">{filename}</span>
-                                  <span className="text-[9px] text-gray-600 uppercase font-bold tracking-wider">{file.language}</span>
+                                  <span className="text-xs font-bold truncate">{filename}</span>
+                                  <span className="text-[9px] text-muted-foreground uppercase font-black tracking-widest">{file.language}</span>
                                 </div>
                               </div>
                             </div>
@@ -207,14 +209,14 @@ function ChatInterface() {
                 onClick={handleShare}
                 disabled={isSharing}
                 className={cn(
-                  "flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-bold transition-all border border-white/5",
+                  "flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-bold transition-smooth border",
                   shareUrl 
-                    ? "bg-green-500/10 text-green-500 border-green-500/20" 
-                    : "bg-white/5 text-gray-400 hover:text-white"
+                    ? "bg-green-500/10 text-green-600 border-green-500/20" 
+                    : "bg-background border-border text-muted-foreground hover:bg-muted"
                 )}
                >
                  {shareUrl ? <Check size={14} /> : <Share2 size={14} />}
-                 <span>{shareUrl ? 'Link Copied' : 'Share'}</span>
+                 <span>{shareUrl ? 'Link Ready' : 'Share'}</span>
                </button>
              )}
           </div>
@@ -229,7 +231,7 @@ function ChatInterface() {
           isLoading={isLoading} 
         />
         
-        <div className="max-w-4xl mx-auto w-full px-4">
+        <div className="max-w-4xl mx-auto w-full px-6">
            <InputArea onSend={handleSend} disabled={isLoading} />
         </div>
       </main>
@@ -239,7 +241,7 @@ function ChatInterface() {
 
 export default function Home() {
   return (
-    <Suspense fallback={<div className="h-screen w-full bg-[#0d0d0d]" />}>
+    <Suspense fallback={<div className="h-screen w-full bg-background" />}>
       <ChatInterface />
     </Suspense>
   );

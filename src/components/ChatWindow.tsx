@@ -2,11 +2,12 @@
 
 import React, { useRef, useEffect } from 'react';
 import { MessageBubble } from './MessageBubble';
-import { useChat } from '@/context/ChatContext';
+import { Sparkles, Layout } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 interface Message {
   role: 'user' | 'assistant' | 'system';
-  content: string;
+  content: string | any[];
   toolInvocations?: any[];
 }
 
@@ -25,19 +26,34 @@ export function ChatWindow({ messages, isLoading }: ChatWindowProps) {
   }, [messages, isLoading]);
 
   return (
-    <div ref={scrollRef} className="flex-1 overflow-y-auto custom-scrollbar">
-      <div className="flex flex-col">
+    <div ref={scrollRef} className="flex-1 overflow-y-auto custom-scrollbar bg-background">
+      <div className="flex flex-col max-w-5xl mx-auto">
         {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full min-h-[60vh] text-center px-4">
-            <div className="w-20 h-20 bg-indigo-600/10 rounded-3xl flex items-center justify-center text-indigo-600 mb-6 animate-pulse">
-              <span className="text-4xl font-bold">A</span>
-            </div>
-            <h2 className="text-3xl font-bold mb-2 tracking-tight">AstraNova</h2>
-            <p className="text-gray-500 max-w-md mx-auto leading-relaxed text-sm">
-              Cognitive reasoning and creative synthesis. 
-              Autonomous interface active. 
-              How shall we proceed today?
+          <div className="flex flex-col items-center justify-center h-full min-h-[70vh] text-center px-4">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="w-12 h-12 bg-primary/5 rounded-2xl flex items-center justify-center text-primary mb-8"
+            >
+              <Sparkles size={24} />
+            </motion.div>
+            <h2 className="text-2xl font-bold mb-3 tracking-tight">How can I help you today?</h2>
+            <p className="text-muted-foreground max-w-sm mx-auto text-sm leading-relaxed">
+              Start a new conversation or project. I'm here to help you synthesize ideas and build artifacts.
             </p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-12 w-full max-w-lg">
+               {[
+                 "Draft a project proposal...",
+                 "Analyze these market trends...",
+                 "Generate a monthly report...",
+                 "Refactor this workspace component..."
+               ].map((prompt, i) => (
+                 <button key={i} className="p-4 rounded-xl border border-border bg-muted/30 text-left text-xs font-medium hover:bg-muted transition-smooth">
+                    {prompt}
+                 </button>
+               ))}
+            </div>
           </div>
         ) : (
           messages.map((msg, i) => (
@@ -51,12 +67,11 @@ export function ChatWindow({ messages, isLoading }: ChatWindowProps) {
         )}
         
         {isLoading && (
-          <div className="flex w-full gap-4 py-6 px-4 md:px-8 bg-gray-50/5 dark:bg-white/5 animate-pulse">
-            <div className="w-8 h-8 rounded-full bg-indigo-600/20" />
+          <div className="flex w-full gap-4 py-8 px-4 md:px-16 animate-pulse opacity-50">
+            <div className="w-8 h-8 rounded-lg bg-muted" />
             <div className="flex-1 space-y-3">
-              <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-1/4" />
-              <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-3/4" />
-              <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-1/2" />
+              <div className="h-2 bg-muted rounded w-1/4" />
+              <div className="h-2 bg-muted rounded w-3/4" />
             </div>
           </div>
         )}
