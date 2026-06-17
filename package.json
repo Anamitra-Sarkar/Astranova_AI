@@ -9,15 +9,31 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^3.0.72",
+    "@tailwindcss/typography": "^0.5.20",
+    "ai": "^6.0.207",
+    "axios": "^1.18.0",
+    "clsx": "^2.1.1",
+    "firebase": "^12.15.0",
+    "firebase-admin": "^14.0.0",
+    "lucide-react": "^1.20.0",
     "next": "16.2.9",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "react-markdown": "^10.1.0",
+    "react-syntax-highlighter": "^16.1.1",
+    "remark-gfm": "^4.0.1",
+    "tailwind-merge": "^3.6.0",
+    "uuid": "^14.0.0",
+    "zhipu-ai-provider": "^0.3.1",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/uuid": "^10.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
     "tailwindcss": "^4",
