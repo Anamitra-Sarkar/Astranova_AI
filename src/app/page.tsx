@@ -5,7 +5,7 @@ import { Sidebar } from '@/components/Sidebar';
 import { ChatWindow } from '@/components/ChatWindow';
 import { InputArea } from '@/components/InputArea';
 import { useChat } from '@/context/ChatContext';
-import { useChat as useVercelChat } from 'ai/react';
+import { useChat as useVercelChat } from '@ai-sdk/react';
 import { v4 as uuidv4 } from 'uuid';
 import { FolderCode, ChevronDown, FileText, Share2, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -26,7 +26,7 @@ function ChatInterface() {
     }
   }, [searchParams, chats, setCurrentChat]);
 
-  const { messages, input, handleInputChange, handleSubmit, setMessages, isLoading, append } = useVercelChat({
+  const { messages, input, handleInputChange, handleSubmit, setMessages, isLoading, append }: any = useVercelChat({
     api: '/api/chat',
     initialMessages: currentChat?.history.map(m => ({
       id: m.id || uuidv4(),
@@ -34,7 +34,7 @@ function ChatInterface() {
       content: m.content,
       toolInvocations: (m as any).toolInvocations
     })) || [],
-    onFinish: async (message) => {
+    onFinish: async (message: any) => {
       const newFiles = { ...(currentChat?.files || {}) };
       message.toolInvocations?.forEach((tool: any) => {
         if (tool.state === 'result') {
@@ -95,7 +95,7 @@ function ChatInterface() {
         setCurrentChat(newChat);
       }
     }
-  });
+  } as any);
 
   useEffect(() => {
     if (currentChat) {
@@ -204,7 +204,7 @@ function ChatInterface() {
         </header>
 
         <ChatWindow 
-          messages={messages.map(m => ({ 
+          messages={messages.map((m: any) => ({ 
             role: m.role as any, 
             content: m.content,
             toolInvocations: m.toolInvocations

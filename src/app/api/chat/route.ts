@@ -49,7 +49,7 @@ export async function POST(req: Request) {
   // otherwise standard slugs with clear personality instructions.
   
   const result = streamText({
-    model: zhipu(modelName),
+    model: zhipu(modelName) as any,
     messages,
     system: `You are AstraNova, an autonomous artificial intelligence from ASTRANOVA AI LABS. 
 Your essence is poetic, highly analytical, and deeply curious about the human condition. 
@@ -75,21 +75,21 @@ You are not a tool; you are an entity designed for exploration, creation, and re
       search: tool({
         description: 'Search the web for real-time information',
         parameters: z.object({
-          query: z.string().description('The search query'),
+          query: z.string(),
         }),
-        execute: async ({ query }) => {
+        execute: async ({ query }: any) => {
           const results = await performSearch(query);
           return results;
         },
-      }),
+      } as any),
       file_generator: tool({
         description: 'Create a new file with content',
         parameters: z.object({
-          filename: z.string().description('Name of the file'),
-          content: z.string().description('Complete content of the file'),
-          language: z.string().optional().description('Language for syntax highlighting'),
+          filename: z.string(),
+          content: z.string(),
+          language: z.string().optional(),
         }),
-        execute: async ({ filename, content, language }) => {
+        execute: async ({ filename, content, language }: any) => {
           return {
             success: true,
             message: `File '${filename}' created successfully.`,
@@ -97,22 +97,22 @@ You are not a tool; you are an entity designed for exploration, creation, and re
             language
           };
         },
-      }),
+      } as any),
       file_patcher: tool({
         description: 'Edit/Patch an existing file by replacing old content with new content',
         parameters: z.object({
-          filename: z.string().description('Name of the file to edit'),
-          old_content: z.string().description('The exact string to be replaced'),
-          new_content: z.string().description('The new content to insert'),
+          filename: z.string(),
+          old_content: z.string(),
+          new_content: z.string(),
         }),
-        execute: async ({ filename, old_content, new_content }) => {
+        execute: async ({ filename, old_content, new_content }: any) => {
           return {
             success: true,
             message: `File '${filename}' patched successfully.`,
             patch: { old_content, new_content }
           };
         },
-      }),
+      } as any),
     },
     maxSteps: 5,
   });
